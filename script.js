@@ -41,6 +41,8 @@ document.addEventListener('DOMContentLoaded', function() {
     let mapPan = { x: 0, y: 0 };
     let hintCount = 0;
     let achievementsEarned = {};
+    let isMapDragging = false;
+    let lastMousePosition = { x: 0, y: 0 };
     
     // DOM Elements
     const gameMap = document.getElementById('gameMap');
@@ -486,7 +488,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 { from: 'mexico', to: 'miami', cost: 35, distance: 2100, time: 3 },
                 { from: 'miami', to: 'losangeles', cost: 60, distance: 3700, time: 5 }
             ],
-            optimalRoute: ['newyork', 'toronto', 'chicago', 'mexico', 'losangeles', 'vancouver', 'toronto', 'miami', 'newyork'],
+            optimalRoute: ['newyork', 'toronto', 'chicago', 'mexico', 'losangeles', 'vancouver', 'chicago', 'miami', 'newyork'],
             optimalDistance: 18550,
             weatherProne: ['miami', 'vancouver', 'chicago'] // Cities prone to weather events
         },
@@ -826,13 +828,29 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Set up event listeners
         setupEventListeners();
+        
+        // Show preview of selected region
+        clearGameMap();
+        loadRegion(currentRegion, currentDifficulty);
+        addEarthEffect();
     }
     
     // Set up all event listeners
     function setupEventListeners() {
         // Game control buttons
         startBtn.addEventListener('click', startGame);
-        resetBtn.addEventListener('click', resetRoute);
+        
+        resetBtn.addEventListener('click', function() {
+            if (gameActive) {
+                resetRoute();
+                
+                // Play sound
+                if (audioEnabled) {
+                    sounds.click.play();
+                }
+            }
+        });
+        
         validateBtn.addEventListener('click', validateRoute);
         hintBtn.addEventListener('click', showHint);
         
@@ -843,14 +861,35 @@ document.addEventListener('DOMContentLoaded', function() {
             if (gameActive) {
                 endGame();
             }
+            
+            // Preview the selected region
+            clearGameMap();
+            loadRegion(currentRegion, currentDifficulty);
+            addEarthEffect();
         });
         
         difficultySelect.addEventListener('change', function() {
             currentDifficulty = this.value;
+            
+            if (gameActive) {
+                endGame();
+                startGame();
+            }
         });
         
         transportSelect.addEventListener('change', function() {
             currentTransport = this.value;
+            const transport = transportData[currentTransport];
+            
+            // Update transport icons on all cities
+            document.querySelectorAll('.city').forEach(city => {
+                city.dataset.transport = transport.icon;
+            });
+            
+            // If route exists, update the route display with new costs
+            if (selectedRoute.length > 0) {
+                updateRouteDisplay();
+            }
         });
         
         // Theme selection
@@ -866,6 +905,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 modeBtns.forEach(b => b.classList.remove('active'));
                 this.classList.add('active');
                 currentGameMode = this.dataset.mode;
+                
+                // If game is active, restart with new mode
+                if (gameActive) {
+                    endGame();
+                    startGame();
+                }
+                
+                // Update UI based on selected mode
+                updateGameModeUI(currentGameMode);
             });
         });
         
@@ -873,6 +921,36 @@ document.addEventListener('DOMContentLoaded', function() {
         zoomInBtn.addEventListener('click', zoomIn);
         zoomOutBtn.addEventListener('click', zoomOut);
         resetViewBtn.addEventListener('click', resetView);
+        
+        // Map dragging
+        gameMap.addEventListener('mousedown', function(e) {
+            if (e.button === 0) { // Left mouse button
+                isMapDragging = true;
+                lastMousePosition = { x: e.clientX, y: e.clientY };
+                gameMap.style.cursor = 'grabbing';
+            }
+        });
+        
+        document.addEventListener('mousemove', function(e) {
+            if (isMapDragging) {
+                const dx = e.clientX - lastMousePosition.x;
+                const dy = e.clientY - lastMousePosition.y;
+                
+                mapPan.x += dx / zoomLevel;
+                mapPan.y += dy / zoomLevel;
+                
+                updateMapTransform();
+                
+                lastMousePosition = { x: e.clientX, y: e.clientY };
+            }
+        });
+        
+        document.addEventListener('mouseup', function() {
+            if (isMapDragging) {
+                isMapDragging = false;
+                gameMap.style.cursor = 'grab';
+            }
+        });
         
         // Result panel buttons
         newGameBtn.addEventListener('click', function() {
@@ -902,6 +980,23 @@ document.addEventListener('DOMContentLoaded', function() {
         volumeControl.addEventListener('input', updateVolume);
     }
     
+    // Update UI based on game mode
+    function updateGameModeUI(mode) {
+        // Remove all mode-specific classes
+        gameMap.classList.remove('timed-mode-map', 'expert-mode-map');
+        timeDisplay.parentElement.classList.remove('timed-mode');
+        
+        switch(mode) {
+            case 'timed':
+                timeDisplay.parentElement.classList.add('timed-mode');
+                break;
+            case 'expert':
+                gameMap.classList.add('expert-mode-map');
+                break;
+            // Standard mode is default, no special UI needed
+        }
+    }
+    
     // Start a new game
     function startGame() {
         clearGameMap();
@@ -920,8 +1015,12 @@ document.addEventListener('DOMContentLoaded', function() {
         // Start the timer
         if (timer) clearInterval(timer);
         timer = setInterval(updateTimer, 1000);
+
         // Load the selected region with appropriate difficulty
         loadRegion(currentRegion, currentDifficulty);
+        
+        // Add Earth effect
+        addEarthEffect();
         
         // Apply weather effects if needed
         if (weatherEffects) {
@@ -934,6 +1033,9 @@ document.addEventListener('DOMContentLoaded', function() {
         hintBtn.disabled = false;
         startBtn.disabled = true;
         updateRouteDisplay();
+        
+        // Apply current game mode UI
+        updateGameModeUI(currentGameMode);
         
         // Animate the cities appearing
         anime({
@@ -999,6 +1101,35 @@ document.addEventListener('DOMContentLoaded', function() {
         const weatherContainer = document.createElement('div');
         weatherContainer.className = 'weather-effects';
         gameMap.appendChild(weatherContainer);
+    }
+    
+    // Add 3D Earth effect to the map
+    function addEarthEffect() {
+        gameMap.classList.add('map-earth');
+        
+        // Add 3D movement effect based on mouse position
+        gameMap.addEventListener('mousemove', function(e) {
+            if (isMapDragging) return; // Skip tilt effect when dragging
+            
+            const rect = gameMap.getBoundingClientRect();
+            const x = e.clientX - rect.left - rect.width / 2;
+            const y = e.clientY - rect.top - rect.height / 2;
+            
+            // Calculate tilt based on mouse position (limited range)
+            const tiltX = y / rect.height * 10;
+            const tiltY = -x / rect.width * 10;
+            
+            gameMap.style.transform = `perspective(1000px) rotateX(${tiltX}deg) rotateY(${tiltY}deg)`;
+            
+            // Also adjust the light effect
+            gameMap.style.backgroundImage = `radial-gradient(circle at ${e.clientX - rect.left}px ${e.clientY - rect.top}px, rgba(255,255,255,0.2) 0%, rgba(0,0,0,0.3) 70%)`;
+        });
+        
+        // Reset transform when mouse leaves
+        gameMap.addEventListener('mouseleave', function() {
+            gameMap.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg)';
+            gameMap.style.backgroundImage = 'radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(0,0,0,0.3) 100%)';
+        });
     }
     
     // Load region data with appropriate difficulty
@@ -1115,6 +1246,10 @@ document.addEventListener('DOMContentLoaded', function() {
         city.style.top = cityData.y + 'px';
         city.dataset.name = cityData.name;
         
+        // Add transport icon
+        const transport = transportData[currentTransport];
+        city.dataset.transport = transport.icon;
+        
         // Add click event
         city.addEventListener('click', (e) => {
             if (e.ctrlKey || e.metaKey) {
@@ -1142,7 +1277,7 @@ document.addEventListener('DOMContentLoaded', function() {
             moveTooltip(e);
         });
         
-        city.addEventListener('mouseleave', () => {
+       city.addEventListener('mouseleave', () => {
             hideTooltip();
         });
         
@@ -1238,12 +1373,35 @@ document.addEventListener('DOMContentLoaded', function() {
         gameMap.appendChild(routePath);
         routePaths.push(routePath);
         
-        // Animate the route path
+        // Animate the route path with 3D effect
         anime({
             targets: routePath,
-            opacity: 1,
-            duration: 600,
+            opacity: [0, 1],
+            translateZ: [0, 20, 0],
+            duration: 800,
             easing: 'easeOutCubic'
+        });
+        
+        // Add particle animation along path
+        createPathAnimation(fromCity, toCity);
+    }
+    
+    // Create particle animation along a path
+    function createPathAnimation(fromCity, toCity) {
+        const particle = document.createElement('div');
+        particle.className = 'path-animation';
+        gameMap.appendChild(particle);
+        
+        anime({
+            targets: particle,
+            left: [fromCity.x, toCity.x],
+            top: [fromCity.y, toCity.y],
+            opacity: [1, 0],
+            easing: 'easeOutQuad',
+            duration: 1000,
+            complete: function() {
+                particle.remove();
+            }
         });
     }
     
@@ -1265,10 +1423,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 sounds.click.play();
             }
             
-            // Animate the start city
+            // Animate the start city with 3D effect
             anime({
                 targets: cityElement,
                 scale: [1, 1.2, 1],
+                translateZ: [0, 30, 0],
                 boxShadow: [
                     '0 0 0 4px rgba(46, 204, 113, 0.3)',
                     '0 0 0 8px rgba(46, 204, 113, 0.6)',
@@ -1300,10 +1459,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Update the route display
                 updateRouteDisplay();
                 
-                // Animate the completion
+                // Animate the completion with 3D effect
                 anime({
                     targets: cityElement,
                     scale: [1, 1.3, 1],
+                    translateZ: [0, 50, 0],
                     boxShadow: [
                         '0 0 0 4px rgba(46, 204, 113, 0.3)',
                         '0 0 0 12px rgba(46, 204, 113, 0.6)',
@@ -1325,10 +1485,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 sounds.click.play();
             }
             
-            // Animate the city selection
+            // Animate the city selection with 3D effect
             anime({
                 targets: cityElement,
                 scale: [1, 1.2, 1],
+                translateZ: [0, 30, 0],
                 boxShadow: [
                     '0 0 0 4px rgba(52, 152, 219, 0.3)',
                     '0 0 0 8px rgba(52, 152, 219, 0.6)',
