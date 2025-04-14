@@ -67,9 +67,9 @@ header {
     margin-bottom: 10px;
 }
 
-.logo-img {
+.globe-logo {
+    font-size: 2.5rem;
     margin-right: 15px;
-    border-radius: 50%;
 }
 
 h1 {
@@ -255,6 +255,7 @@ h1 {
     width: 100%;
     height: 600px;
     margin-bottom: 20px;
+    perspective: 1000px;
 }
 
 #gameMap {
@@ -262,7 +263,17 @@ h1 {
     height: 100%;
     position: relative;
     overflow: hidden;
-    transition: background-color 0.5s ease;
+    transition: all 0.5s ease;
+    transform-style: preserve-3d;
+}
+
+/* 3D Earth effect for maps */
+.map {
+    border-radius: 50%;
+    background-image: radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(0,0,0,0.3) 100%);
+    box-shadow: inset 0 0 50px rgba(0,0,0,0.5);
+    transition: all 0.5s ease;
+    overflow: hidden;
 }
 
 .map-political {
@@ -283,6 +294,22 @@ h1 {
 
 .map-futuristic {
     background: linear-gradient(to bottom, #000428, #004e92);
+}
+
+/* Rotating earth animation */
+@keyframes rotateEarth {
+    0% {
+        background-position: 0% 50%;
+    }
+    100% {
+        background-position: 100% 50%;
+    }
+}
+
+.map-earth {
+    background: linear-gradient(90deg, #1e3c72, #2a5298, #1e3c72);
+    background-size: 200% 100%;
+    animation: rotateEarth 20s linear infinite;
 }
 
 .map-controls {
@@ -362,6 +389,13 @@ h1 {
     z-index: 10;
     transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     box-shadow: 0 0 0 4px rgba(255, 87, 34, 0.3);
+    transform-style: preserve-3d;
+    will-change: transform, box-shadow;
+}
+
+.city:hover {
+    transform: translate(-50%, -50%) scale(1.2) translateZ(10px);
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.7);
 }
 
 .city.visited {
@@ -376,6 +410,21 @@ h1 {
 
 .city.weather-affected {
     animation: pulse 1.5s infinite;
+}
+
+/* Transport icon styles */
+.city::after {
+    content: attr(data-transport);
+    position: absolute;
+    top: -20px;
+    right: -20px;
+    font-size: 16px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.city:hover::after {
+    opacity: 1;
 }
 
 @keyframes pulse {
@@ -1091,23 +1140,4 @@ input[type="range"]::-webkit-slider-thumb {
     background: linear-gradient(to bottom, #000428, #004e92);
 }
 
-/* Responsive Layout */
-@media (max-width: 1200px) {
-    .main-content {
-        flex-direction: column;
-    }
-    
-    .sidebar {
-        flex-direction: row;
-        flex-wrap: wrap;
-    }
-    
-    .control-panel, .info-panel {
-        flex: 1;
-        min-width: 300px;
-    }
-    
-    .achievements-panel {
-        width: 100%;
-    }
-}
+/* Responsive
