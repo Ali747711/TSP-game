@@ -1140,4 +1140,59 @@ input[type="range"]::-webkit-slider-thumb {
     background: linear-gradient(to bottom, #000428, #004e92);
 }
 
-/* Responsive
+/* Responsive Layout */
+@media (max-width: 1200px) {
+    .main-content {
+        flex-direction: column;
+    }
+    
+    .sidebar {
+        flex-direction: row;
+        flex-wrap: wrap;
+    }
+    
+    .control-panel, .info-panel {
+        flex: 1;
+        min-width: 300px;
+    }
+    
+    .achievements-panel {
+        width: 100%;
+    }
+}
+
+/* Game mode specific styles */
+.timed-mode {
+    color: var(--warning-color);
+    animation: timerPulse 1s infinite alternate;
+}
+
+@keyframes timerPulse {
+    from { opacity: 0.8; }
+    to { opacity: 1; }
+}
+
+.expert-mode .path {
+    opacity: 0.3;
+}
+
+.expert-mode .city {
+    transform: translate(-50%, -50%) scale(0.9);
+}
+
+.expert-mode .city:hover {
+    transform: translate(-50%, -50%) scale(1.1) translateZ(10px);
+}
+
+/* 3D animations for route completion */
+.path-animation {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    background-color: var(--primary-light);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    z-index: 5;
+    box-shadow: 0 0 10px var(--primary-light);
+}
