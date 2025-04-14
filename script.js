@@ -289,7 +289,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     population: '2.4 million',
                     area: '334.8 km²',
                     timeZone: 'UTC+5',
-                    description: 'Tashkent is the capital and largest city of Uzbekistan. It is known for its many museums and mix of modern and Soviet-era architecture.',
+                    description: 'Tashkent is the capital and largest city of Uzbekistan. It\'s known for its many museums and mix of modern and Soviet-era architecture.',
                     image: 'https://via.placeholder.com/300x200?text=Tashkent'
                 },
                 { 
