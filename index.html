@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Route Challenge - Enhanced Edition</title>
+    <title>The Route Challenge</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -18,11 +18,10 @@
     <div class="game-container">
         <header>
             <div class="logo">
-                <!-- <img src="https://via.placeholder.com/50" alt="Logo" class="logo-img"> -->
                 <span class="globe-logo">🌏</span>
                 <h1>The Route Challenge</h1>
             </div>
-            <p class="subtitle">Master the art of optimal route planning!</p>
+            <p class="subtitle">Plan the perfect route visiting all cities exactly once!</p>
             
             <div class="game-modes">
                 <button class="mode-btn active" data-mode="standard">Standard</button>
@@ -69,10 +68,10 @@
                         <div class="setting-group">
                             <label for="transportSelect">Transport:</label>
                             <select id="transportSelect" class="select-styled">
-                                <option value="car">Car</option>
-                                <option value="plane">Airplane</option>
-                                <option value="train">Train</option>
-                                <option value="ship">Ship</option>
+                                <option value="car">Car 🚗</option>
+                                <option value="plane">Airplane ✈️</option>
+                                <option value="train">Train 🚆</option>
+                                <option value="ship">Ship 🚢</option>
                             </select>
                         </div>
                     </div>
@@ -92,8 +91,7 @@
                 </div>
                 
                 <div class="info-panel">
-                    <h3>Your Route</h3>
-                    <p class="route-instructions">Click on cities in sequence to create your route.</p>
+                    <h3>Game Status</h3>
                     <div class="route-stats">
                         <div class="stat-item">
                             <span class="stat-label">Cities:</span>
@@ -104,7 +102,7 @@
                             <span class="stat-value"><span id="currentDistance">0</span> km</span>
                         </div>
                         <div class="stat-item">
-                            <span class="stat-label">Fuel Cost:</span>
+                            <span class="stat-label">Cost:</span>
                             <span class="stat-value">$<span id="currentCost">0</span></span>
                         </div>
                         <div class="stat-item">
@@ -120,6 +118,8 @@
                         </div>
                     </div>
                     
+                    <h3>Your Route</h3>
+                    <p class="route-instructions">Click on cities in sequence to create your route. Return to your starting city when done!</p>
                     <ul id="routeList" class="route-list">
                         <!-- Route cities will be listed here -->
                     </ul>
@@ -152,6 +152,30 @@
                             <div class="achievement-info">
                                 <h4>Globetrotter</h4>
                                 <p>Complete routes in all regions</p>
+                            </div>
+                            <div class="achievement-status locked">🔒</div>
+                        </div>
+                        <div class="achievement" data-id="weatherproof">
+                            <div class="achievement-icon">☔</div>
+                            <div class="achievement-info">
+                                <h4>Weatherproof</h4>
+                                <p>Complete a route with active weather effects</p>
+                            </div>
+                            <div class="achievement-status locked">🔒</div>
+                        </div>
+                        <div class="achievement" data-id="speed_run">
+                            <div class="achievement-icon">⏱️</div>
+                            <div class="achievement-info">
+                                <h4>Speed Run</h4>
+                                <p>Complete a timed challenge with at least 800 points</p>
+                            </div>
+                            <div class="achievement-status locked">🔒</div>
+                        </div>
+                        <div class="achievement" data-id="explorer">
+                            <div class="achievement-icon">🔍</div>
+                            <div class="achievement-info">
+                                <h4>Explorer</h4>
+                                <p>Visit all city info panels in a region</p>
                             </div>
                             <div class="achievement-status locked">🔒</div>
                         </div>
@@ -322,16 +346,33 @@
             </div>
         </div>
     </div>
-    
-    <div class="audio-controls">
-        <button id="toggleAudioBtn" class="audio-btn">🔊</button>
-        <div class="volume-slider">
-            <input type="range" id="volumeControl" min="0" max="100" value="50">
-        </div>
-    </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.3/howler.min.js"></script>
+    <script>
+        // Fallback if anime.js fails to load
+        if (typeof anime === 'undefined') {
+            console.warn('anime.js not loaded, using fallback animation');
+            window.anime = function(options) {
+                // Simple fallback for basic animations
+                if (options.targets && options.opacity) {
+                    const elements = typeof options.targets === 'string' 
+                        ? document.querySelectorAll(options.targets) 
+                        : [options.targets];
+                    
+                    elements.forEach(el => {
+                        el.style.transition = `opacity ${options.duration}ms ease`;
+                        el.style.opacity = Array.isArray(options.opacity) ? 
+                            options.opacity[options.opacity.length-1] : options.opacity;
+                    });
+                    
+                    if (options.complete) {
+                        setTimeout(options.complete, options.duration);
+                    }
+                }
+            };
+            anime.stagger = () => 0;
+        }
+    </script>
     <script src="script.js"></script>
 </body>
 </html>
