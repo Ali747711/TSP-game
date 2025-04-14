@@ -3,8 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Route Challenge</title>
+    <title>The Route Challenge - Enhanced Edition</title>
     <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
     <div class="loading">
@@ -12,76 +15,322 @@
         <p>Loading The Route Challenge...</p>
     </div>
     
-    <div class="container">
+    <div class="game-container">
         <header>
-            <h1>The Route Challenge</h1>
-            <p class="subtitle">Plan the perfect route visiting all cities exactly once!</p>
+            <div class="logo">
+                <img src="https://via.placeholder.com/50" alt="Logo" class="logo-img">
+                <h1>The Route Challenge</h1>
+            </div>
+            <p class="subtitle">Master the art of optimal route planning!</p>
+            
+            <div class="game-modes">
+                <button class="mode-btn active" data-mode="standard">Standard</button>
+                <button class="mode-btn" data-mode="timed">Timed Challenge</button>
+                <button class="mode-btn" data-mode="expert">Expert Mode</button>
+            </div>
         </header>
         
-        <div class="game-controls">
-            <div class="control-panel">
-                <h3>Game Controls</h3>
-                <button id="startBtn" class="success">Start New Game</button>
-                <button id="resetBtn" disabled>Reset Route</button>
-                <button id="validateBtn" disabled>Validate Route</button>
-                
-                <div class="region-selector">
-                    <h3>Select Region</h3>
-                    <select id="regionSelect">
-                        <option value="eastAsia">East Asia</option>
-                        <option value="europe">Europe</option>
-                        <option value="centralAsia">Central Asia</option>
-                    </select>
+        <div class="main-content">
+            <div class="sidebar">
+                <div class="control-panel">
+                    <h3>Game Controls</h3>
+                    <button id="startBtn" class="btn success">Start New Game</button>
+                    <button id="resetBtn" class="btn" disabled>Reset Route</button>
+                    <button id="validateBtn" class="btn primary" disabled>Validate Route</button>
+                    <button id="hintBtn" class="btn info" disabled>Get Hint</button>
+                    
+                    <div class="separator"></div>
+                    
+                    <div class="settings-section">
+                        <h3>Game Settings</h3>
+                        
+                        <div class="setting-group">
+                            <label for="regionSelect">Region:</label>
+                            <select id="regionSelect" class="select-styled">
+                                <option value="eastAsia">East Asia</option>
+                                <option value="europe">Europe</option>
+                                <option value="centralAsia">Central Asia</option>
+                                <option value="northAmerica">North America</option>
+                                <option value="southAmerica">South America</option>
+                                <option value="africa">Africa</option>
+                            </select>
+                        </div>
+                        
+                        <div class="setting-group">
+                            <label for="difficultySelect">Difficulty:</label>
+                            <select id="difficultySelect" class="select-styled">
+                                <option value="easy">Easy</option>
+                                <option value="medium" selected>Medium</option>
+                                <option value="hard">Hard</option>
+                            </select>
+                        </div>
+                        
+                        <div class="setting-group">
+                            <label for="transportSelect">Transport:</label>
+                            <select id="transportSelect" class="select-styled">
+                                <option value="car">Car</option>
+                                <option value="plane">Airplane</option>
+                                <option value="train">Train</option>
+                                <option value="ship">Ship</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="separator"></div>
+                    
+                    <div class="theme-section">
+                        <h3>Map Theme</h3>
+                        <div class="theme-options">
+                            <div class="theme-option theme-political active" data-theme="political" title="Political"></div>
+                            <div class="theme-option theme-topographic" data-theme="topographic" title="Topographic"></div>
+                            <div class="theme-option theme-satellite" data-theme="satellite" title="Satellite"></div>
+                            <div class="theme-option theme-night" data-theme="night" title="Night"></div>
+                            <div class="theme-option theme-futuristic" data-theme="futuristic" title="Futuristic"></div>
+                        </div>
+                    </div>
                 </div>
                 
-                <div class="theme-selector">
-                    <h3>Map Theme</h3>
-                    <div class="theme-option theme-political active" data-theme="political" title="Political"></div>
-                    <div class="theme-option theme-topographic" data-theme="topographic" title="Topographic"></div>
-                    <div class="theme-option theme-futuristic" data-theme="futuristic" title="Futuristic"></div>
+                <div class="info-panel">
+                    <h3>Your Route</h3>
+                    <p class="route-instructions">Click on cities in sequence to create your route.</p>
+                    <div class="route-stats">
+                        <div class="stat-item">
+                            <span class="stat-label">Cities:</span>
+                            <span class="stat-value"><span id="visitedCount">0</span>/<span id="totalCities">0</span></span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Distance:</span>
+                            <span class="stat-value"><span id="currentDistance">0</span> km</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Fuel Cost:</span>
+                            <span class="stat-value">$<span id="currentCost">0</span></span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Travel Time:</span>
+                            <span class="stat-value"><span id="travelTime">0</span> hrs</span>
+                        </div>
+                    </div>
+                    
+                    <div class="timer-container">
+                        <div class="timer">
+                            <div class="timer-icon">⏱️</div>
+                            <span id="timeDisplay">00:00</span>
+                        </div>
+                    </div>
+                    
+                    <ul id="routeList" class="route-list">
+                        <!-- Route cities will be listed here -->
+                    </ul>
+                </div>
+                
+                <div class="achievements-panel collapsed">
+                    <div class="panel-header">
+                        <h3>Achievements</h3>
+                        <button class="toggle-btn">▼</button>
+                    </div>
+                    <div class="panel-content">
+                        <div class="achievement" data-id="speed_demon">
+                            <div class="achievement-icon">🚀</div>
+                            <div class="achievement-info">
+                                <h4>Speed Demon</h4>
+                                <p>Complete a route in under 1 minute</p>
+                            </div>
+                            <div class="achievement-status locked">🔒</div>
+                        </div>
+                        <div class="achievement" data-id="perfectionist">
+                            <div class="achievement-icon">✨</div>
+                            <div class="achievement-info">
+                                <h4>Perfectionist</h4>
+                                <p>Find the optimal route on hard difficulty</p>
+                            </div>
+                            <div class="achievement-status locked">🔒</div>
+                        </div>
+                        <div class="achievement" data-id="globetrotter">
+                            <div class="achievement-icon">🌍</div>
+                            <div class="achievement-info">
+                                <h4>Globetrotter</h4>
+                                <p>Complete routes in all regions</p>
+                            </div>
+                            <div class="achievement-status locked">🔒</div>
+                        </div>
+                    </div>
                 </div>
             </div>
             
-            <div class="score-panel">
-                <h3>Game Status</h3>
-                <p class="selected-region">Region: <span id="currentRegion">East Asia</span></p>
-                <p>Cities Visited: <span id="visitedCount">0</span>/<span id="totalCities">0</span></p>
-                <p>Current Route Cost: <span id="currentCost">0</span></p>
-                <div class="timer">Time: <span id="timeDisplay">00:00</span></div>
+            <div class="game-content">
+                <div class="map-container">
+                    <div id="gameMap" class="map map-political">
+                        <div class="map-controls">
+                            <button id="zoomInBtn" class="map-control-btn">+</button>
+                            <button id="zoomOutBtn" class="map-control-btn">-</button>
+                            <button id="resetViewBtn" class="map-control-btn">⟲</button>
+                        </div>
+                        
+                        <div class="weather-effects">
+                            <!-- Weather effects will be added here -->
+                        </div>
+                    </div>
+                    
+                    <div class="tooltip"></div>
+                    
+                    <div class="map-legend">
+                        <div class="legend-item">
+                            <div class="legend-color city-regular"></div>
+                            <span>Unvisited City</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color city-visited"></div>
+                            <span>Visited City</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color city-start"></div>
+                            <span>Starting City</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="city-info-panel hidden">
+                    <div class="panel-header">
+                        <h3 id="cityInfoName">City Name</h3>
+                        <button class="close-btn">×</button>
+                    </div>
+                    <div class="city-details">
+                        <div class="city-image">
+                            <img id="cityImage" src="https://via.placeholder.com/300x200" alt="City Image">
+                        </div>
+                        <div class="city-stats">
+                            <div class="stat-row">
+                                <span class="stat-label">Population:</span>
+                                <span id="cityPopulation" class="stat-value">Unknown</span>
+                            </div>
+                            <div class="stat-row">
+                                <span class="stat-label">Area:</span>
+                                <span id="cityArea" class="stat-value">Unknown</span>
+                            </div>
+                            <div class="stat-row">
+                                <span class="stat-label">Time Zone:</span>
+                                <span id="cityTimeZone" class="stat-value">Unknown</span>
+                            </div>
+                        </div>
+                        <p id="cityDescription" class="city-description">No information available for this city.</p>
+                    </div>
+                </div>
             </div>
         </div>
-        
-        <div class="game-area">
-            <div class="map-container">
-                <div id="gameMap" class="map-political"></div>
-                <div class="tooltip"></div>
-            </div>
-            
-            <div class="info-panel">
-                <h3>Your Route</h3>
-                <p>Click on cities in sequence to create your route. Remember to return to your starting city!</p>
-                <ul id="routeList" class="route-list">
-                    <!-- Route cities will be listed here -->
-                </ul>
-            </div>
-        </div>
-        
-        <div class="overlay"></div>
-        <div class="result-panel">
+    </div>
+    
+    <div class="overlay"></div>
+    
+    <div class="result-panel">
+        <div class="panel-header">
             <h2>Route Complete!</h2>
-            <p class="score-detail">Time: <span id="finalTime">00:00</span></p>
-            <p class="score-detail">Total Cities: <span id="finalCities">0</span></p>
-            <p class="score-detail">Route Cost: <span id="finalCost">0</span></p>
-            <div class="big-score">Score: <span id="finalScore">0</span></div>
-            <p class="feedback" id="routeFeedback">Great job planning your route!</p>
-            <div class="result-buttons">
-                <button id="newGameBtn" class="success">New Game</button>
-                <button id="closeResultBtn">Close</button>
+            <button class="close-btn" id="closeResultBtn">×</button>
+        </div>
+        
+        <div class="result-content">
+            <div class="result-summary">
+                <div class="summary-item">
+                    <div class="summary-icon">⏱️</div>
+                    <div class="summary-details">
+                        <h4>Time</h4>
+                        <p id="finalTime">00:00</p>
+                    </div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-icon">🏙️</div>
+                    <div class="summary-details">
+                        <h4>Cities</h4>
+                        <p id="finalCities">0</p>
+                    </div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-icon">💰</div>
+                    <div class="summary-details">
+                        <h4>Total Cost</h4>
+                        <p>$<span id="finalCost">0</span></p>
+                    </div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-icon">🛣️</div>
+                    <div class="summary-details">
+                        <h4>Distance</h4>
+                        <p><span id="finalDistance">0</span> km</p>
+                    </div>
+                </div>
             </div>
+            
+            <div class="final-score">
+                <h3>Your Score</h3>
+                <div class="score-display">
+                    <span id="finalScore">0</span>
+                </div>
+                <p id="routeFeedback" class="feedback">Great job planning your route!</p>
+            </div>
+            
+            <div class="route-visualization">
+                <h3>Your Route Path</h3>
+                <div id="miniMap" class="mini-map"></div>
+            </div>
+            
+            <div class="result-comparison">
+                <h3>Comparison</h3>
+                <div class="comparison-item">
+                    <span class="comparison-label">Your Distance:</span>
+                    <span class="comparison-value" id="yourDistance">0 km</span>
+                </div>
+                <div class="comparison-item">
+                    <span class="comparison-label">Optimal Distance:</span>
+                    <span class="comparison-value" id="optimalDistance">0 km</span>
+                </div>
+                <div class="comparison-item">
+                    <span class="comparison-label">Efficiency:</span>
+                    <span class="comparison-value" id="efficiencyRating">0%</span>
+                </div>
+            </div>
+            
+            <div class="new-achievement" id="newAchievement">
+                <h3>Achievement Unlocked!</h3>
+                <div class="achievement-content">
+                    <div class="achievement-icon">🏆</div>
+                    <div class="achievement-details">
+                        <h4 id="achievementName">Achievement Name</h4>
+                        <p id="achievementDescription">Achievement Description</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="result-buttons">
+                <button id="newGameBtn" class="btn success">New Game</button>
+                <button id="shareBtn" class="btn info">Share Result</button>
+                <button id="viewOptimalBtn" class="btn">View Optimal Route</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="side-panel hint-panel">
+        <div class="panel-header">
+            <h3>Route Hint</h3>
+            <button class="close-btn">×</button>
+        </div>
+        <div class="panel-content">
+            <p id="hintText">Consider visiting cities in a clockwise pattern to minimize crossing paths.</p>
+            <div class="hint-options">
+                <button id="nextHintBtn" class="btn small">Next Hint</button>
+                <button id="showSolutionBtn" class="btn small danger">Show Solution</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="audio-controls">
+        <button id="toggleAudioBtn" class="audio-btn">🔊</button>
+        <div class="volume-slider">
+            <input type="range" id="volumeControl" min="0" max="100" value="50">
         </div>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.3/howler.min.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
