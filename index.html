@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Route Challenge</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="loading">
+        <div class="loading-spinner"></div>
+        <p>Loading The Route Challenge...</p>
+    </div>
+    
+    <div class="container">
+        <header>
+            <h1>The Route Challenge</h1>
+            <p class="subtitle">Plan the perfect route visiting all cities exactly once!</p>
+        </header>
+        
+        <div class="game-controls">
+            <div class="control-panel">
+                <h3>Game Controls</h3>
+                <button id="startBtn" class="success">Start New Game</button>
+                <button id="resetBtn" disabled>Reset Route</button>
+                <button id="validateBtn" disabled>Validate Route</button>
+                
+                <div class="region-selector">
+                    <h3>Select Region</h3>
+                    <select id="regionSelect">
+                        <option value="eastAsia">East Asia</option>
+                        <option value="europe">Europe</option>
+                        <option value="centralAsia">Central Asia</option>
+                    </select>
+                </div>
+                
+                <div class="theme-selector">
+                    <h3>Map Theme</h3>
+                    <div class="theme-option theme-political active" data-theme="political" title="Political"></div>
+                    <div class="theme-option theme-topographic" data-theme="topographic" title="Topographic"></div>
+                    <div class="theme-option theme-futuristic" data-theme="futuristic" title="Futuristic"></div>
+                </div>
+            </div>
+            
+            <div class="score-panel">
+                <h3>Game Status</h3>
+                <p class="selected-region">Region: <span id="currentRegion">East Asia</span></p>
+                <p>Cities Visited: <span id="visitedCount">0</span>/<span id="totalCities">0</span></p>
+                <p>Current Route Cost: <span id="currentCost">0</span></p>
+                <div class="timer">Time: <span id="timeDisplay">00:00</span></div>
+            </div>
+        </div>
+        
+        <div class="game-area">
+            <div class="map-container">
+                <div id="gameMap" class="map-political"></div>
+                <div class="tooltip"></div>
+            </div>
+            
+            <div class="info-panel">
+                <h3>Your Route</h3>
+                <p>Click on cities in sequence to create your route. Remember to return to your starting city!</p>
+                <ul id="routeList" class="route-list">
+                    <!-- Route cities will be listed here -->
+                </ul>
+            </div>
+        </div>
+        
+        <div class="overlay"></div>
+        <div class="result-panel">
+            <h2>Route Complete!</h2>
+            <p class="score-detail">Time: <span id="finalTime">00:00</span></p>
+            <p class="score-detail">Total Cities: <span id="finalCities">0</span></p>
+            <p class="score-detail">Route Cost: <span id="finalCost">0</span></p>
+            <div class="big-score">Score: <span id="finalScore">0</span></div>
+            <p class="feedback" id="routeFeedback">Great job planning your route!</p>
+            <div class="result-buttons">
+                <button id="newGameBtn" class="success">New Game</button>
+                <button id="closeResultBtn">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
