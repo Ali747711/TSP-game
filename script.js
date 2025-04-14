@@ -400,7 +400,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     population: '8.4 million',
                     area: '783.8 km²',
                     timeZone: 'UTC-5/-4',
-                    description: 'New York City comprises 5 boroughs sitting where the Hudson River meets the Atlantic Ocean. At its core is Manhattan, a densely populated borough that's among the world's major commercial, financial and cultural centers.',
+                    description: 'New York City comprises 5 boroughs sitting where the Hudson River meets the Atlantic Ocean. At its core is Manhattan, a densely populated borough that\'s among the world\'s major commercial, financial and cultural centers.',
                     image: 'https://via.placeholder.com/300x200?text=New+York'
                 },
                 { 
