@@ -289,7 +289,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     population: '2.4 million',
                     area: '334.8 km²',
                     timeZone: 'UTC+5',
-                    description: 'Tashkent is the capital and largest city of Uzbekistan. It's known for its many museums and mix of modern and Soviet-era architecture.',
+                    description: 'Tashkent is the capital and largest city of Uzbekistan. It is known for its many museums and mix of modern and Soviet-era architecture.',
                     image: 'https://via.placeholder.com/300x200?text=Tashkent'
                 },
                 { 
@@ -455,7 +455,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     population: '675,000',
                     area: '115 km²',
                     timeZone: 'UTC-8/-7',
-                    description: 'Vancouver, a bustling west coast seaport in British Columbia, is among Canada's densest, most ethnically diverse cities.',
+                    description: 'Vancouver, a bustling west coast seaport in British Columbia, is among Canada\'s densest, most ethnically diverse cities.',
                     image: 'https://via.placeholder.com/300x200?text=Vancouver'
                 },
                 { 
