@@ -124,6 +124,38 @@ h1 {
     flex: 1;
 }
 
+/* Game Toolbar */
+.game-toolbar {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-bottom: 10px;
+    padding: 10px;
+    background-color: var(--light-color);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-sm);
+}
+
+.toolbar-btn {
+    width: 36px;
+    height: 36px;
+    background-color: white;
+    border: none;
+    border-radius: 50%;
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: var(--transition-fast);
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.toolbar-btn:hover {
+    transform: scale(1.1);
+    box-shadow: var(--shadow-md);
+}
+
 /* Panels */
 .control-panel, .info-panel, .achievements-panel, .map-container, .city-info-panel {
     background: white;
@@ -255,17 +287,20 @@ h1 {
     width: 100%;
     height: 600px;
     margin-bottom: 20px;
-    perspective: 1000px;
+    perspective: 1200px; /* Enhanced perspective */
+    overflow: hidden;
+    border-radius: var(--border-radius);
 }
 
 #gameMap {
     width: 100%;
     height: 100%;
     position: relative;
-    overflow: hidden;
-    transition: all 0.5s ease;
     transform-style: preserve-3d;
     cursor: grab;
+    transform-origin: center center;
+    transition: transform 0.5s ease-out;
+    box-shadow: inset 0 0 50px rgba(0,0,0,0.8), 0 0 30px rgba(0,0,0,0.5);
 }
 
 #gameMap:active {
@@ -276,8 +311,7 @@ h1 {
 .map {
     border-radius: 50%;
     background-image: radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(0,0,0,0.3) 100%);
-    box-shadow: inset 0 0 50px rgba(0,0,0,0.5);
-    transition: all 0.5s ease;
+    box-shadow: inset 0 0 60px rgba(0,0,0,0.6);
     overflow: hidden;
 }
 
@@ -299,6 +333,55 @@ h1 {
 
 .map-futuristic {
     background: linear-gradient(to bottom, #000428, #004e92);
+}
+
+/* Globe atmosphere */
+.globe-atmosphere {
+    position: absolute;
+    top: -50px;
+    left: -50px;
+    right: -50px;
+    bottom: -50px;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: -1;
+    background: radial-gradient(circle, rgba(100,149,237,0.1) 0%, rgba(0,0,0,0) 70%);
+}
+
+/* Stars effect */
+.star {
+    position: absolute;
+    width: 2px;
+    height: 2px;
+    background-color: white;
+    border-radius: 50%;
+    animation: twinkle 5s infinite alternate;
+}
+
+@keyframes twinkle {
+    0% { opacity: 0.3; }
+    50% { opacity: 1; }
+    100% { opacity: 0.3; }
+}
+
+/* Cloud layers */
+.globe-cloud {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1MDAiIGhlaWdodD0iNTAwIj48ZmlsdGVyIGlkPSJhIiB4PSIwIiB5PSIwIj48ZmVUdXJidWxlbmNlIGJhc2VGcmVxdWVuY3k9Ii4wNSIgbnVtT2N0YXZlcz0iMiIgc3RpdGNoVGlsZXM9InN0aXRjaCIgdHlwZT0iZnJhY3RhbE5vaXNlIi8+PGZlQ29sb3JNYXRyaXggdmFsdWVzPSIwIDAgMCAwIDEgMCAwIDAgMCAxIDAgMCAwIDAgMSAwIDAgMCAwLjMgMCIvPjwvZmlsdGVyPjxyZWN0IHdpZHRoPSI1MDAiIGhlaWdodD0iNTAwIiBmaWx0ZXI9InVybCgjYSkiLz48L3N2Zz4=');
+    opacity: 0.15;
+    animation: cloud-drift 120s linear infinite;
+    transform-origin: center center;
+    border-radius: 50%;
+    mix-blend-mode: overlay;
+}
+
+@keyframes cloud-drift {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }
 
 /* Rotating earth animation */
@@ -478,16 +561,30 @@ h1 {
 
 .route-path {
     position: absolute;
-    height: 4px;
+    height: 5px;
     transform-origin: 0 0;
     pointer-events: none;
     z-index: 2;
     opacity: 0;
     background: linear-gradient(90deg, var(--primary-color), var(--info-color));
+    box-shadow: 0 0 10px rgba(52,152,219,0.6);
 }
 
 .route-path.visible {
     opacity: 1;
+}
+
+/* Enhanced path animation */
+.path-animation {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(52,152,219,0) 70%);
+    box-shadow: 0 0 15px rgba(52,152,219,0.8);
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    z-index: 10;
 }
 
 /* Route Display */
@@ -721,6 +818,66 @@ h1 {
     color: var(--dark-color);
 }
 
+/* Weather Info Panel */
+.weather-info-panel {
+    position: fixed;
+    top: 100px;
+    left: 20px;
+    width: 300px;
+    background-color: white;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-lg);
+    z-index: 999;
+    overflow: hidden;
+    transform: translateX(-100%);
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.weather-info-panel.hidden {
+    transform: translateX(-100%);
+}
+
+.weather-info-panel:not(.hidden) {
+    transform: translateX(0);
+}
+
+.weather-icon {
+    font-size: 3rem;
+    text-align: center;
+    margin: 10px 0;
+}
+
+.weather-effects-list {
+    margin-top: 15px;
+    background-color: var(--gray-light);
+    padding: 10px;
+    border-radius: var(--border-radius);
+}
+
+.weather-effects-list h5 {
+    margin-bottom: 10px;
+    color: var(--dark-color);
+}
+
+.weather-effects-list ul {
+    list-style: none;
+    padding: 0;
+}
+
+.weather-effects-list li {
+    padding: 5px 0;
+    border-bottom: 1px solid var(--gray);
+}
+
+.weather-effects-list li:last-child {
+    border-bottom: none;
+}
+
+.weather-effects-list li.current-transport {
+    font-weight: bold;
+    color: var(--primary-color);
+}
+
 /* Tooltip */
 .tooltip {
     position: absolute;
@@ -735,6 +892,106 @@ h1 {
     transition: opacity 0.3s ease;
     box-shadow: var(--shadow-sm);
     max-width: 250px;
+}
+
+/* Notification System */
+.notification-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1000;
+    width: 300px;
+}
+
+.notification {
+    background-color: var(--dark-color);
+    color: white;
+    padding: 15px;
+    border-radius: var(--border-radius);
+    margin-bottom: 10px;
+    box-shadow: var(--shadow-md);
+    transform: translateX(120%);
+    opacity: 0;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.notification.show {
+    transform: translateX(0);
+    opacity: 1;
+}
+
+/* Tutorial System */
+.tutorial-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1000;
+    display: none;
+}
+
+.tutorial-container.show {
+    display: block;
+}
+
+.tutorial-panel {
+    position: absolute;
+    width: 320px;
+    background-color: white;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-lg);
+    z-index: 1001;
+    overflow: hidden;
+}
+
+.tutorial-header {
+    background-color: var(--primary-color);
+    color: white;
+    padding: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.tutorial-content {
+    padding: 20px;
+    line-height: 1.6;
+}
+
+.tutorial-buttons {
+    padding: 0 20px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.tutorial-indicator {
+    font-size: 0.9rem;
+    color: var(--gray-dark);
+}
+
+.tutorial-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+}
+
+.tutorial-highlight {
+    position: relative;
+    z-index: 1002;
+    animation: pulse-highlight 2s infinite;
+    box-shadow: 0 0 0 4px var(--primary-light);
+}
+
+@keyframes pulse-highlight {
+    0% { box-shadow: 0 0 0 0 rgba(30, 136, 229, 0.7); }
+    70% { box-shadow: 0 0 0 10px rgba(30, 136, 229, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(30, 136, 229, 0); }
 }
 
 /* Result Panel */
@@ -976,23 +1233,36 @@ h1 {
     opacity: 0.7;
 }
 
-.rain {
+.weather-effects.rain {
     background-image: 
         linear-gradient(to bottom, rgba(255,255,255,0) 0%, rgba(255,255,255,0.7) 100%),
         linear-gradient(to right, rgba(30,144,255,0.1) 0%, rgba(30,144,255,0.1) 100%);
     animation: rain 0.3s linear infinite;
 }
 
-.snow {
+.weather-effects.snow {
     background-image: radial-gradient(white 15%, transparent 16%),
                       radial-gradient(white 15%, transparent 16%);
     background-size: 10px 10px;
     animation: snow 3s linear infinite;
 }
 
-.fog {
+.weather-effects.fog {
     background: linear-gradient(to bottom, transparent, rgba(255,255,255,0.8));
     backdrop-filter: blur(5px);
+}
+
+.weather-effects.storm {
+    background-image: 
+        linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0) 100%),
+        url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cGF0aCBmaWxsPSIjZmZmIiBkPSJNNDAgNDBMMzAgNzBoMTBsMTAgMzBsMTAtMzBoLTEweiIvPjwvc3ZnPg==');
+    background-size: 100% 100%, 50px 50px;
+    animation: storm 1s infinite;
+}
+
+.weather-effects.heatwave {
+    background: linear-gradient(to bottom, rgba(255, 87, 34, 0.2), transparent);
+    animation: heat-ripple 3s infinite;
 }
 
 @keyframes rain {
@@ -1011,6 +1281,19 @@ h1 {
     100% {
         background-position: 10px 20px, 15px 25px;
     }
+}
+
+@keyframes storm {
+    0% { opacity: 0.7; }
+    50% { opacity: 0.9; }
+    51% { opacity: 0.5; }
+    100% { opacity: 0.7; }
+}
+
+@keyframes heat-ripple {
+    0% { background-position: 0 0; }
+    50% { background-position: 100px 0; }
+    100% { background-position: 0 0; }
 }
 
 /* Loading Screen */
@@ -1124,20 +1407,7 @@ h1 {
     transform: translate(-50%, -50%) scale(1.1) translateZ(10px);
 }
 
-/* 3D animations for route completion */
-.path-animation {
-    position: absolute;
-    width: 10px;
-    height: 10px;
-    background-color: var(--primary-light);
-    border-radius: 50%;
-    transform: translate(-50%, -50%);
-    pointer-events: none;
-    z-index: 5;
-    box-shadow: 0 0 10px var(--primary-light);
-}
-
-/* Responsive Layout */
+/* Mobile responsive styles */
 @media (max-width: 1200px) {
     .main-content {
         flex-direction: column;
@@ -1155,5 +1425,258 @@ h1 {
     
     .achievements-panel {
         width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    .game-container {
+        padding: 0 10px;
+    }
+    
+    .main-content {
+        flex-direction: column;
+    }
+    
+    .sidebar {
+        flex: none;
+        width: 100%;
+        margin-bottom: 20px;
+    }
+    
+    .game-content {
+        flex: none;
+        width: 100%;
+    }
+    
+    .map-container {
+        height: 400px;
+    }
+    
+    .result-panel {
+        width: 95%;
+        max-width: 95%;
+    }
+    
+    .result-summary {
+        flex-direction: column;
+    }
+    
+    .summary-item {
+        min-width: 100%;
+    }
+    
+    .weather-info-panel {
+        width: 250px;
+    }
+    
+    .notification-container {
+        width: 250px;
+    }
+    
+    .tutorial-panel {
+        width: 280px;
+    }
+    
+    h1 {
+        font-size: 1.8rem;
+    }
+    
+    .subtitle {
+        font-size: 1rem;
+    }
+    
+    .mode-btn {
+        padding: 6px 12px;
+        font-size: 0.9rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .map-container {
+        height: 350px;
+    }
+    
+    .game-toolbar {
+        justify-content: center;
+    }
+    
+    .city {
+        width: 16px;
+        height: 16px;
+    }
+    
+    .city-label {
+        font-size: 10px;
+    }
+    
+    .timer {
+        font-size: 1.5rem;
+    }
+    
+    .weather-info-panel, 
+    .notification-container, 
+    .tutorial-panel {
+        width: 220px;
+    }
+    
+    .weather-info-panel {
+        top: 70px;
+    }
+    
+    .side-panel {
+        width: 250px;
+    }
+    
+    .achievement-icon {
+        width: 30px;
+        height: 30px;
+        font-size: 1.2rem;
+    }
+    
+    .city-info-panel {
+        width: 260px;
+    }
+    
+    .theme-option {
+        width: 30px;
+        height: 30px;
+    }
+}
+
+/* Accessibility styles */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+    
+    .map-earth {
+        animation: none !important;
+    }
+    
+    .globe-cloud {
+        animation: none !important;
+    }
+    
+    .tutorial-highlight {
+        animation: none !important;
+        box-shadow: 0 0 0 4px var(--primary-light);
+    }
+    
+    .timed-mode {
+        animation: none !important;
+        color: var(--warning-color);
+    }
+    
+    .city.weather-affected {
+        animation: none !important;
+        box-shadow: 0 0 0 4px rgba(255, 193, 7, 0.5);
+    }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --gray-light: #2c3e50;
+        --light-color: #2c3e50;
+        --dark-color: #ecf0f1;
+        --gray: #34495e;
+        --gray-dark: #7f8c8d;
+    }
+    
+    body {
+        background-color: #1a202c;
+        color: #ecf0f1;
+    }
+    
+    .control-panel, .info-panel, .achievements-panel, .city-info-panel, 
+    .tutorial-panel, .weather-info-panel, .result-panel {
+        background-color: #2d3748;
+        color: #ecf0f1;
+    }
+    
+    .select-styled, .toolbar-btn, .map-control-btn {
+        background-color: #4a5568;
+        color: #ecf0f1;
+    }
+    
+    .btn {
+        background-color: #4a5568;
+        color: #ecf0f1;
+    }
+    
+    .achievement {
+        background-color: #4a5568;
+    }
+    
+    .achievement-icon {
+        background-color: #2d3748;
+    }
+    
+    .route-list li {
+        background-color: #4a5568;
+    }
+    
+    .city-label {
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8), -1px -1px 2px rgba(0, 0, 0, 0.8);
+        color: #ecf0f1;
+    }
+    
+    .map-legend {
+        background-color: rgba(45, 55, 72, 0.8);
+        color: #ecf0f1;
+    }
+    
+    .notification {
+        background-color: #4a5568;
+    }
+}
+
+/* High contrast mode */
+@media (forced-colors: active) {
+    .city {
+        forced-color-adjust: none;
+        background-color: CanvasText;
+        border: 2px solid CanvasText;
+    }
+    
+    .city.visited {
+        background-color: Highlight;
+    }
+    
+    .city.start {
+        background-color: ActiveText;
+    }
+    
+    .path {
+        background-color: CanvasText;
+    }
+    
+    .route-path {
+        background-color: Highlight;
+    }
+    
+    .path-animation {
+        background-color: Highlight;
+    }
+    
+    .btn {
+        border: 1px solid CanvasText;
+    }
+    
+    .btn.primary, .btn.success, .btn.info, .btn.danger {
+        background-color: ButtonFace;
+        color: ButtonText;
+        border: 1px solid CanvasText;
+    }
+    
+    .theme-option {
+        border: 1px solid CanvasText;
+    }
+    
+    .theme-option.active {
+        border: 3px solid Highlight;
     }
 }
