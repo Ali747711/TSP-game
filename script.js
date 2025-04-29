@@ -27,6 +27,9 @@ document.addEventListener('DOMContentLoaded', function() {
     let achievementsEarned = {};
     let isMapDragging = false;
     let lastMousePosition = { x: 0, y: 0 };
+    let tutorialActive = false;
+    let tutorialStep = 0;
+    let soundEnabled = true;
     
     // DOM Elements
     const gameMap = document.getElementById('gameMap');
@@ -715,8 +718,163 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
 
-    // Weather types
-    const weatherTypes = ['rain', 'snow', 'fog'];
+    // Sound effects for game events
+    const soundEffects = {
+        cityClick: 'sounds/city-click.mp3',
+        pathSelect: 'sounds/path-select.mp3',
+        routeComplete: 'sounds/route-complete.mp3',
+        routeInvalid: 'sounds/route-invalid.mp3',
+        achievement: 'sounds/achievement.mp3',
+        weatherAlert: 'sounds/weather-alert.mp3',
+        gameStart: 'sounds/game-start.mp3',
+        gameEnd: 'sounds/game-end.mp3',
+        buttonClick: 'sounds/button-click.mp3'
+    };
+
+    // Enhanced weather types with realistic impacts
+    const weatherTypes = [
+        {
+            type: 'rain',
+            name: 'Rain',
+            description: 'Heavy rainfall makes travel slower and more expensive.',
+            icon: '🌧️',
+            transportEffect: {
+                car: 1.7,
+                plane: 1.5,
+                train: 1.3,
+                ship: 1.6
+            },
+            sound: 'sounds/rain.mp3'
+        },
+        {
+            type: 'snow',
+            name: 'Snow',
+            description: 'Snowfall significantly impacts road travel and can delay flights.',
+            icon: '❄️',
+            transportEffect: {
+                car: 2.0,
+                plane: 1.8,
+                train: 1.5,
+                ship: 1.3
+            },
+            sound: 'sounds/snow.mp3'
+        },
+        {
+            type: 'fog',
+            name: 'Fog',
+            description: 'Dense fog reduces visibility and slows all transportation.',
+            icon: '🌫️',
+            transportEffect: {
+                car: 1.5,
+                plane: 2.1,
+                train: 1.4,
+                ship: 1.8
+            },
+            sound: 'sounds/fog.mp3'
+        },
+        {
+            type: 'storm',
+            name: 'Storm',
+            description: 'Severe storms create dangerous travel conditions.',
+            icon: '⛈️',
+            transportEffect: {
+                car: 1.8,
+                plane: 2.5,
+                train: 1.6,
+                ship: 2.2
+            },
+            sound: 'sounds/storm.mp3'
+        },
+        {
+            type: 'heatwave',
+            name: 'Heatwave',
+            description: 'Extreme heat can cause equipment failures and delays.',
+            icon: '🔥',
+            transportEffect: {
+                car: 1.4,
+                plane: 1.3,
+                train: 1.7,
+                ship: 1.2
+            },
+            sound: 'sounds/heatwave.mp3'
+        }
+    ];
+    
+    // Tutorial steps
+    const tutorialSteps = [
+        {
+            title: "Welcome to The Route Challenge!",
+            message: "This game challenges you to solve the Traveling Salesman Problem - finding the optimal route through multiple cities. Let's get started!",
+            target: ".game-container",
+            position: "center"
+        },
+        {
+            title: "Select Your Region",
+            message: "First, choose a geographic region to explore. Each region has its own set of cities and connections.",
+            target: "#regionSelect",
+            position: "right"
+        },
+        {
+            title: "Choose Your Difficulty",
+            message: "Select a difficulty level. Higher difficulties have fewer available paths between cities.",
+            target: "#difficultySelect",
+            position: "right"
+        },
+        {
+            title: "Select Your Transport",
+            message: "Choose your mode of transportation. Each has different speed and cost factors, and reacts differently to weather conditions.",
+            target: "#transportSelect",
+            position: "right"
+        },
+        {
+            title: "Game Modes",
+            message: "Try different game modes: Standard mode is a classic experience, Timed mode adds a time challenge, and Expert mode has limited path visibility.",
+            target: ".game-modes",
+            position: "bottom"
+        },
+        {
+            title: "Start the Game",
+            message: "Click 'Start New Game' when you're ready to begin your journey!",
+            target: "#startBtn",
+            position: "right"
+        },
+        {
+            title: "City Selection",
+            message: "Click on cities to build your route. You must visit all cities exactly once and return to your starting point.",
+            target: "#gameMap",
+            position: "left"
+        },
+        {
+            title: "City Information",
+            message: "Right-click on any city (or Ctrl+click) to view detailed information about it.",
+            target: "#gameMap",
+            position: "right"
+        },
+        {
+            title: "Route Building",
+            message: "Your route will appear here as you select cities. Watch your distance, cost, and travel time increase.",
+            target: ".route-list",
+            position: "left"
+        },
+        {
+            title: "Weather Effects",
+            message: "Weather may affect certain cities, increasing travel costs and time. Watch for weather indicators on the map!",
+            target: ".weather-effects",
+            position: "center"
+        },
+        {
+            title: "Complete Your Route",
+            message: "After visiting all cities, return to your starting city to complete the route.",
+            target: "#validateBtn",
+            position: "right"
+        },
+        {
+            title: "You're Ready!",
+            message: "Now you know the basics! Remember, the goal is to find the most efficient route. Good luck!",
+            target: ".game-container",
+            position: "center"
+        }
+    ];
     
     // Achievement definitions
     const achievements = {
@@ -769,7 +927,37 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
     
-    // Helper functions for local storage
+    // Helper function for sound effects
+    function playSound(soundFile) {
+        if (!soundEnabled) return;
+        
+        try {
+            const sound = new Audio(soundFile);
+            sound.volume = 0.5;
+            sound.play().catch(e => console.warn("Failed to play sound:", e));
+        } catch (e) {
+            console.warn("Error playing sound:", e);
+        }
+    }
+    
+    // Toggle sound function
+    function toggleSound() {
+        soundEnabled = !soundEnabled;
+        
+        // Update UI
+        const soundToggleBtn = document.getElementById('soundToggleBtn');
+        if (soundToggleBtn) {
+            soundToggleBtn.textContent = soundEnabled ? '🔊' : '🔇';
+            soundToggleBtn.title = soundEnabled ? 'Sound On' : 'Sound Off';
+        }
+        
+        // Play feedback sound if enabling
+        if (soundEnabled) {
+            playSound(soundEffects.buttonClick);
+        }
+    }
+    
+    // Helper functions for local storage and save/load
     function saveGameState() {
         try {
             const gameState = {
@@ -777,7 +965,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 completedRegions: Object.keys(regionData).filter(region => 
                     localStorage.getItem(`completed_${region}`) === 'true'
                 ),
-                visitedCities: []
+                visitedCities: [],
+                settings: {
+                    soundEnabled: soundEnabled,
+                    currentTheme: currentTheme
+                }
             };
             
             localStorage.setItem('routeChallenge_gameState', JSON.stringify(gameState));
@@ -793,14 +985,223 @@ document.addEventListener('DOMContentLoaded', function() {
                 const gameState = JSON.parse(savedState);
                 achievementsEarned = gameState.achievements || {};
                 
+                // Load settings if available
+                if (gameState.settings) {
+                    soundEnabled = gameState.settings.soundEnabled !== undefined ? 
+                        gameState.settings.soundEnabled : true;
+                    
+                    if (gameState.settings.currentTheme) {
+                        changeMapTheme(gameState.settings.currentTheme);
+                    }
+                }
+                
                 // Update achievement display
                 updateAchievementDisplay();
+                
+                // Update sound toggle button
+                const soundToggleBtn = document.getElementById('soundToggleBtn');
+                if (soundToggleBtn) {
+                    soundToggleBtn.textContent = soundEnabled ? '🔊' : '🔇';
+                    soundToggleBtn.title = soundEnabled ? 'Sound On' : 'Sound Off';
+                }
             }
         } catch (e) {
             console.error("Error loading game state:", e);
             // If there's an error, use an empty achievements object
             achievementsEarned = {};
         }
+    }
+    
+    // Save current game progress
+    function saveCurrentGame() {
+        if (!gameActive || selectedRoute.length === 0) {
+            showNotification("No active game to save!");
+            return;
+        }
+        
+        try {
+            const gameProgress = {
+                region: currentRegion,
+                theme: currentTheme,
+                difficulty: currentDifficulty,
+                transport: currentTransport,
+                gameMode: currentGameMode,
+                selectedRoute: selectedRoute.map(city => city.id),
+                startCity: startCity ? startCity.id : null,
+                elapsedTime: elapsedTime,
+                weatherEffects: weatherEffects,
+                weatherAffectedCities: weatherAffectedCities,
+                timestamp: Date.now()
+            };
+            
+            localStorage.setItem('routeChallenge_savedGame', JSON.stringify(gameProgress));
+            showNotification("Game saved successfully!");
+            
+            playSound(soundEffects.buttonClick);
+        } catch (e) {
+            console.error("Error saving game progress:", e);
+            showNotification("Failed to save game!");
+        }
+    }
+    
+    // Load saved game
+    function loadSavedGame() {
+        try {
+            const savedGame = localStorage.getItem('routeChallenge_savedGame');
+            if (!savedGame) {
+                showNotification("No saved game found!");
+                return false;
+            }
+            
+            const gameProgress = JSON.parse(savedGame);
+            
+            // Check if saved game is still valid
+            if (!gameProgress || !gameProgress.region || !gameProgress.selectedRoute) {
+                showNotification("Saved game is corrupted or invalid!");
+                return false;
+            }
+            
+            // End current game if active
+            if (gameActive) {
+                endGame();
+            }
+            
+            // Set game settings from saved game
+            currentRegion = gameProgress.region;
+            currentTheme = gameProgress.theme || 'political';
+            currentDifficulty = gameProgress.difficulty || 'medium';
+            currentTransport = gameProgress.transport || 'car';
+            currentGameMode = gameProgress.gameMode || 'standard';
+            elapsedTime = gameProgress.elapsedTime || 0;
+            weatherEffects = gameProgress.weatherEffects || false;
+            weatherAffectedCities = gameProgress.weatherAffectedCities || [];
+            
+            // Update UI to match settings
+            if (regionSelect) regionSelect.value = currentRegion;
+            if (difficultySelect) difficultySelect.value = currentDifficulty;
+            if (transportSelect) transportSelect.value = currentTransport;
+            
+            // Update game mode buttons
+            modeBtns.forEach(btn => {
+                if (btn.dataset.mode === currentGameMode) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+            
+            // Change map theme
+            changeMapTheme(currentTheme);
+            
+            // Start the game (this will load the region and cities)
+            startGame(true); // true indicates it's a loaded game
+            
+            // Restore route from saved IDs
+            const routeIds = gameProgress.selectedRoute || [];
+            const cityMap = {};
+            
+            // Create a map of city ID to city object
+            cities.forEach(city => {
+                cityMap[city.id] = city;
+            });
+            
+            // Find start city
+            if (gameProgress.startCity && cityMap[gameProgress.startCity]) {
+                startCity = cityMap[gameProgress.startCity];
+                const startCityElement = document.getElementById(startCity.id);
+                if (startCityElement) {
+                    startCityElement.classList.add('start');
+                    startCityElement.classList.add('visited');
+                }
+            }
+            
+            // Clear existing route
+            selectedRoute = [];
+            
+            // Recreate the route
+            if (startCity) {
+                selectedRoute.push(startCity);
+                
+                for (let i = 0; i < routeIds.length; i++) {
+                    if (routeIds[i] === startCity.id) continue; // Skip start city in the route IDs
+                    
+                    const cityId = routeIds[i];
+                    if (cityMap[cityId]) {
+                        const city = cityMap[cityId];
+                        const cityElement = document.getElementById(city.id);
+                        
+                        if (cityElement) {
+                            cityElement.classList.add('visited');
+                            
+                            // Create route path from previous city
+                            if (selectedRoute.length > 0) {
+                                const prevCity = selectedRoute[selectedRoute.length - 1];
+                                createRoutePath(prevCity, city, selectedRoute.length);
+                            }
+                            
+                            // Add to route
+                            selectedRoute.push(city);
+                        }
+                    }
+                }
+            }
+            
+            // Update route display
+            updateRouteDisplay();
+            
+            // Check if route is complete
+            if (selectedRoute.length === cities.length + 1) {
+                validateBtn.disabled = false;
+            }
+            
+            // Start timer from saved elapsed time
+            startTime = Date.now() - (elapsedTime * 1000);
+            timer = setInterval(updateTimer, 1000);
+            
+            // Apply weather effects if needed
+            if (weatherEffects) {
+                applyWeatherEffects();
+            }
+            
+            showNotification("Game loaded successfully!");
+            playSound(soundEffects.gameStart);
+            return true;
+        } catch (e) {
+            console.error("Error loading saved game:", e);
+            showNotification("Failed to load game!");
+            return false;
+        }
+    }
+    
+    // Show notification
+    function showNotification(message, duration = 3000) {
+        // Create container if it doesn't exist
+        let container = document.querySelector('.notification-container');
+        if (!container) {
+            container = document.createElement('div');
+            container.className = 'notification-container';
+            document.body.appendChild(container);
+        }
+        
+        // Create notification
+        const notification = document.createElement('div');
+        notification.className = 'notification';
+        notification.textContent = message;
+        
+        container.appendChild(notification);
+        
+        // Animate in
+        setTimeout(() => {
+            notification.classList.add('show');
+        }, 10);
+        
+        // Remove after duration
+        setTimeout(() => {
+            notification.classList.remove('show');
+            setTimeout(() => {
+                notification.remove();
+            }, 500);
+        }, duration);
     }
     
     // ===============================================
@@ -810,6 +1211,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize the game
     function init() {
         try {
+            // Create the UI elements for new features
+            createNewUIElements();
+            
             // Hide loading screen after delay
             setTimeout(() => {
                 const loadingScreen = document.querySelector('.loading');
@@ -844,6 +1248,12 @@ document.addEventListener('DOMContentLoaded', function() {
             clearGameMap();
             loadRegion(currentRegion, currentDifficulty);
             addEarthEffect();
+            
+            // Check if first time playing
+            if (!localStorage.getItem('routeChallenge_tutorialCompleted')) {
+                // Delay the tutorial to let the game load first
+                setTimeout(startTutorial, 2500);
+            }
         } catch (e) {
             console.error("Error initializing game:", e);
             
@@ -855,22 +1265,177 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
+    // Create new UI elements for enhanced features
+    function createNewUIElements() {
+        // Create notification container
+        const notificationContainer = document.createElement('div');
+        notificationContainer.className = 'notification-container';
+        document.body.appendChild(notificationContainer);
+        
+        // Create tutorial container
+        const tutorialContainer = document.createElement('div');
+        tutorialContainer.className = 'tutorial-container';
+        tutorialContainer.innerHTML = `
+            <div class="tutorial-panel">
+                <div class="tutorial-header">
+                    <h3 id="tutorialTitle">Tutorial</h3>
+                    <button id="tutorialCloseBtn" class="close-btn">×</button>
+                </div>
+                <div class="tutorial-content">
+                    <p id="tutorialMessage">Welcome to The Route Challenge!</p>
+                </div>
+                <div class="tutorial-buttons">
+                    <button id="tutorialPrevBtn" class="btn small">Previous</button>
+                    <div class="tutorial-indicator">
+                        <span id="tutorialCurrentStep">1</span>/<span id="tutorialTotalSteps">${tutorialSteps.length}</span>
+                    </div>
+                    <button id="tutorialNextBtn" class="btn primary small">Next</button>
+                </div>
+            </div>
+            <div class="tutorial-overlay"></div>
+        `;
+        document.body.appendChild(tutorialContainer);
+        
+        // Create game controls toolbar
+        const gameToolbar = document.createElement('div');
+        gameToolbar.className = 'game-toolbar';
+        gameToolbar.innerHTML = `
+            <button id="soundToggleBtn" title="Toggle Sound" class="toolbar-btn">🔊</button>
+            <button id="saveGameBtn" title="Save Game" class="toolbar-btn">💾</button>
+            <button id="loadGameBtn" title="Load Game" class="toolbar-btn">📂</button>
+            <button id="tutorialBtn" title="Tutorial" class="toolbar-btn">❓</button>
+        `;
+        
+        // Add to the game container
+        const gameContainer = document.querySelector('.game-container');
+        if (gameContainer) {
+            gameContainer.insertBefore(gameToolbar, gameContainer.firstChild);
+        }
+        
+        // Create weather info panel
+        const weatherInfoPanel = document.createElement('div');
+        weatherInfoPanel.className = 'weather-info-panel hidden';
+        weatherInfoPanel.innerHTML = `
+            <div class="panel-content">
+                <div class="weather-icon" id="weatherIcon"></div>
+                <h4 id="weatherName">Weather Condition</h4>
+                <p id="weatherDescription">Weather description will appear here.</p>
+                <div class="weather-effects-list">
+                    <h5>Impact on Transport</h5>
+                    <ul id="weatherEffectsList"></ul>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(weatherInfoPanel);
+        
+        // Add atmosphere container for enhanced globe effect
+        const atmosphereContainer = document.createElement('div');
+        atmosphereContainer.className = 'globe-atmosphere';
+        
+        const mapContainer = document.querySelector('.map-container');
+        if (mapContainer) {
+            mapContainer.appendChild(atmosphereContainer);
+        }
+    }
+    
     // Set up all event listeners
     function setupEventListeners() {
         // Game control buttons
-        startBtn.addEventListener('click', startGame);
+        startBtn.addEventListener('click', function() {
+            playSound(soundEffects.buttonClick);
+            startGame();
+        });
         
         resetBtn.addEventListener('click', function() {
             if (gameActive) {
+                playSound(soundEffects.buttonClick);
                 resetRoute();
             }
         });
         
-        validateBtn.addEventListener('click', validateRoute);
-        hintBtn.addEventListener('click', showHint);
+        validateBtn.addEventListener('click', function() {
+            playSound(soundEffects.buttonClick);
+            validateRoute();
+        });
+        
+        hintBtn.addEventListener('click', function() {
+            playSound(soundEffects.buttonClick);
+            showHint();
+        });
+        
+        // New toolbar buttons
+        const soundToggleBtn = document.getElementById('soundToggleBtn');
+        if (soundToggleBtn) {
+            soundToggleBtn.addEventListener('click', function() {
+                toggleSound();
+                playSound(soundEffects.buttonClick);
+            });
+        }
+        
+        const saveGameBtn = document.getElementById('saveGameBtn');
+        if (saveGameBtn) {
+            saveGameBtn.addEventListener('click', function() {
+                playSound(soundEffects.buttonClick);
+                saveCurrentGame();
+            });
+        }
+        
+        const loadGameBtn = document.getElementById('loadGameBtn');
+        if (loadGameBtn) {
+            loadGameBtn.addEventListener('click', function() {
+                playSound(soundEffects.buttonClick);
+                loadSavedGame();
+            });
+        }
+        
+        const tutorialBtn = document.getElementById('tutorialBtn');
+        if (tutorialBtn) {
+            tutorialBtn.addEventListener('click', function() {
+                playSound(soundEffects.buttonClick);
+                startTutorial();
+            });
+        }
+        
+        // Tutorial buttons
+        const tutorialCloseBtn = document.getElementById('tutorialCloseBtn');
+        if (tutorialCloseBtn) {
+            tutorialCloseBtn.addEventListener('click', function() {
+                playSound(soundEffects.buttonClick);
+                endTutorial();
+            });
+        }
+        
+        const tutorialPrevBtn = document.getElementById('tutorialPrevBtn');
+        if (tutorialPrevBtn) {
+            tutorialPrevBtn.addEventListener('click', function() {
+                playSound(soundEffects.buttonClick);
+                showTutorialStep(tutorialStep - 1);
+            });
+        }
+        
+        const tutorialNextBtn = document.getElementById('tutorialNextBtn');
+        if (tutorialNextBtn) {
+            tutorialNextBtn.addEventListener('click', function() {
+                playSound(soundEffects.buttonClick);
+                showTutorialStep(tutorialStep + 1);
+            });
+        }
+        
+        // Weather panel close button
+        const weatherPanel = document.querySelector('.weather-info-panel');
+        if (weatherPanel) {
+            const closeBtn = weatherPanel.querySelector('.close-btn');
+            if (closeBtn) {
+                closeBtn.addEventListener('click', function() {
+                    weatherPanel.classList.add('hidden');
+                    playSound(soundEffects.buttonClick);
+                });
+            }
+        }
         
         // Settings
         regionSelect.addEventListener('change', function() {
+            playSound(soundEffects.buttonClick);
             currentRegion = this.value;
             
             if (gameActive) {
@@ -884,6 +1449,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         
         difficultySelect.addEventListener('change', function() {
+            playSound(soundEffects.buttonClick);
             currentDifficulty = this.value;
             
             if (gameActive) {
@@ -893,6 +1459,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         
         transportSelect.addEventListener('change', function() {
+            playSound(soundEffects.buttonClick);
             currentTransport = this.value;
             const transport = transportData[currentTransport];
             
@@ -910,13 +1477,16 @@ document.addEventListener('DOMContentLoaded', function() {
         // Theme selection
         themeOptions.forEach(option => {
             option.addEventListener('click', function() {
+                playSound(soundEffects.buttonClick);
                 changeMapTheme(this.dataset.theme);
+                saveGameState(); // Save theme preference
             });
         });
         
         // Game mode buttons
         modeBtns.forEach(btn => {
             btn.addEventListener('click', function() {
+                playSound(soundEffects.buttonClick);
                 modeBtns.forEach(b => b.classList.remove('active'));
                 this.classList.add('active');
                 currentGameMode = this.dataset.mode;
@@ -933,9 +1503,20 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         
         // Map controls
-        zoomInBtn.addEventListener('click', zoomIn);
-        zoomOutBtn.addEventListener('click', zoomOut);
-        resetViewBtn.addEventListener('click', resetView);
+        zoomInBtn.addEventListener('click', function() {
+            playSound(soundEffects.buttonClick);
+            zoomIn();
+        });
+        
+        zoomOutBtn.addEventListener('click', function() {
+            playSound(soundEffects.buttonClick);
+            zoomOut();
+        });
+        
+        resetViewBtn.addEventListener('click', function() {
+            playSound(soundEffects.buttonClick);
+            resetView();
+        });
         
         // Map dragging
         gameMap.addEventListener('mousedown', function(e) {
@@ -967,32 +1548,93 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
         
+        // Touch support for dragging
+        gameMap.addEventListener('touchstart', function(e) {
+            if (e.touches.length === 1) {
+                isMapDragging = true;
+                lastMousePosition = { 
+                    x: e.touches[0].clientX, 
+                    y: e.touches[0].clientY 
+                };
+                e.preventDefault();
+            }
+        });
+        
+        document.addEventListener('touchmove', function(e) {
+            if (isMapDragging && e.touches.length === 1) {
+                const dx = e.touches[0].clientX - lastMousePosition.x;
+                const dy = e.touches[0].clientY - lastMousePosition.y;
+                
+                mapPan.x += dx / zoomLevel;
+                mapPan.y += dy / zoomLevel;
+                
+                updateMapTransform();
+                
+                lastMousePosition = { 
+                    x: e.touches[0].clientX, 
+                    y: e.touches[0].clientY 
+                };
+                e.preventDefault();
+            }
+        });
+        
+        document.addEventListener('touchend', function() {
+            isMapDragging = false;
+        });
+        
         // Result panel buttons
         newGameBtn.addEventListener('click', function() {
+            playSound(soundEffects.buttonClick);
             hideResultPanel();
             startGame();
         });
         
-        shareBtn.addEventListener('click', shareResult);
-        viewOptimalBtn.addEventListener('click', showOptimalRoute);
-        closeResultBtn.addEventListener('click', hideResultPanel);
+        shareBtn.addEventListener('click', function() {
+            playSound(soundEffects.buttonClick);
+            shareResult();
+        });
+        
+        viewOptimalBtn.addEventListener('click', function() {
+            playSound(soundEffects.buttonClick);
+            hideResultPanel();
+            showOptimalRoute();
+        });
+        
+        closeResultBtn.addEventListener('click', function() {
+            playSound(soundEffects.buttonClick);
+            hideResultPanel();
+        });
         
         // Hint panel buttons
-        nextHintBtn.addEventListener('click', showNextHint);
-        showSolutionBtn.addEventListener('click', showSolution);
+        nextHintBtn.addEventListener('click', function() {
+            playSound(soundEffects.buttonClick);
+            showNextHint();
+        });
+        
+        showSolutionBtn.addEventListener('click', function() {
+            playSound(soundEffects.buttonClick);
+            showSolution();
+        });
         
         if (document.querySelector('.hint-panel .close-btn')) {
-            document.querySelector('.hint-panel .close-btn').addEventListener('click', hideHintPanel);
+            document.querySelector('.hint-panel .close-btn').addEventListener('click', function() {
+                playSound(soundEffects.buttonClick);
+                hideHintPanel();
+            });
         }
         
         // City info panel
         if (document.querySelector('.city-info-panel .close-btn')) {
-            document.querySelector('.city-info-panel .close-btn').addEventListener('click', hideCityInfo);
+            document.querySelector('.city-info-panel .close-btn').addEventListener('click', function() {
+                playSound(soundEffects.buttonClick);
+                hideCityInfo();
+            });
         }
         
         // Achievements panel toggle
         if (document.querySelector('.achievements-panel .toggle-btn')) {
             document.querySelector('.achievements-panel .toggle-btn').addEventListener('click', function() {
+                playSound(soundEffects.buttonClick);
                 achievementsPanel.classList.toggle('collapsed');
             });
         }
@@ -1020,48 +1662,60 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Start a new game
-    function startGame() {
+    function startGame(isLoadedGame = false) {
         try {
-            clearGameMap();
+            if (!isLoadedGame) {
+                // Only clear and reset if not loading a saved game
+                clearGameMap();
+                gameActive = true;
+                startTime = Date.now();
+                elapsedTime = 0;
+                selectedRoute = [];
+                startCity = null;
+                hintCount = 0;
+                weatherEffects = Math.random() < 0.3; // 30% chance of weather effects
+                weatherAffectedCities = [];
+            }
+            
             gameActive = true;
-            startTime = Date.now();
-            elapsedTime = 0;
-            selectedRoute = [];
-            startCity = null;
-            hintCount = 0;
-            weatherEffects = Math.random() < 0.3; // 30% chance of weather effects
-            weatherAffectedCities = [];
             
-            // Reset map view
-            resetView();
-            
+            // Reset map view if not loading
+            if (!isLoadedGame) {
+                resetView();
+            }
+    
             // Start the timer
             if (timer) clearInterval(timer);
             timer = setInterval(updateTimer, 1000);
     
             // Load the selected region with appropriate difficulty
-            loadRegion(currentRegion, currentDifficulty);
-            
-            // Add Earth effect
-            addEarthEffect();
-            
-            // Apply weather effects if needed
-            if (weatherEffects) {
-                applyWeatherEffects();
+            if (!isLoadedGame) {
+                loadRegion(currentRegion, currentDifficulty);
+                
+                // Add Earth effect
+                addEarthEffect();
+                
+                // Apply weather effects if needed
+                if (weatherEffects) {
+                    applyWeatherEffects();
+                }
             }
             
             // Update UI elements
             resetBtn.disabled = false;
-            validateBtn.disabled = true;
+            validateBtn.disabled = !(selectedRoute.length === cities.length + 1);
             hintBtn.disabled = false;
             startBtn.disabled = true;
-            updateRouteDisplay();
+            
+            if (!isLoadedGame) {
+                updateRouteDisplay();
+            }
             
             // Apply current game mode UI
             updateGameModeUI(currentGameMode);
             
-            // Animate the cities appearing
-            if (typeof anime !== 'undefined') {
+            // Animate the cities appearing if not loading
+            if (!isLoadedGame && typeof anime !== 'undefined') {
                 anime({
                     targets: '.city',
                     scale: [0, 1],
@@ -1081,16 +1735,23 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             // Update counters
-            visitedCountDisplay.textContent = '0';
-            totalCitiesDisplay.textContent = cities.length;
-            currentCostDisplay.textContent = '0';
-            currentDistanceDisplay.textContent = '0';
-            travelTimeDisplay.textContent = '0';
+            if (!isLoadedGame) {
+                visitedCountDisplay.textContent = '0';
+                totalCitiesDisplay.textContent = cities.length;
+                currentCostDisplay.textContent = '0';
+                currentDistanceDisplay.textContent = '0';
+                travelTimeDisplay.textContent = '0';
+            }
             
             // If timed mode, set timer constraints
             if (currentGameMode === 'timed' && timeDisplay && timeDisplay.parentElement) {
                 // Add visual timer indication
                 timeDisplay.parentElement.classList.add('timed-mode');
+            }
+            
+            // Play start game sound
+            if (!isLoadedGame) {
+                playSound(soundEffects.gameStart);
             }
         } catch (e) {
             console.error("Error starting game:", e);
@@ -1112,6 +1773,9 @@ document.addEventListener('DOMContentLoaded', function() {
         if (currentGameMode === 'timed' && timeDisplay && timeDisplay.parentElement) {
             timeDisplay.parentElement.classList.remove('timed-mode');
         }
+        
+        // Play end game sound
+        playSound(soundEffects.gameEnd);
     }
     
     // Clear the game map
@@ -1128,13 +1792,74 @@ document.addEventListener('DOMContentLoaded', function() {
         const weatherContainer = document.createElement('div');
         weatherContainer.className = 'weather-effects';
         gameMap.appendChild(weatherContainer);
+        
+        // Add map controls back
+        const mapControls = document.createElement('div');
+        mapControls.className = 'map-controls';
+        mapControls.innerHTML = `
+            <button id="zoomInBtn" class="map-control-btn">+</button>
+            <button id="zoomOutBtn" class="map-control-btn">-</button>
+            <button id="resetViewBtn" class="map-control-btn">⟲</button>
+        `;
+        gameMap.appendChild(mapControls);
+        
+        // Reattach event listeners to map controls
+        document.getElementById('zoomInBtn').addEventListener('click', function() {
+            playSound(soundEffects.buttonClick);
+            zoomIn();
+        });
+        
+        document.getElementById('zoomOutBtn').addEventListener('click', function() {
+            playSound(soundEffects.buttonClick);
+            zoomOut();
+        });
+        
+        document.getElementById('resetViewBtn').addEventListener('click', function() {
+            playSound(soundEffects.buttonClick);
+            resetView();
+        });
     }
     
-    // Add 3D Earth effect to the map
+    // Add enhanced 3D Earth effect to the map
     function addEarthEffect() {
         if (!gameMap) return;
         
         gameMap.classList.add('map-earth');
+        
+        // Add 3D rotation and lighting effects
+        const rotateMap = () => {
+            if (!gameMap) return;
+            
+            const centerX = gameMap.offsetWidth / 2;
+            const centerY = gameMap.offsetHeight / 2;
+            
+            // Create a subtle auto-rotation effect
+            let angle = 0;
+            let radius = 10;
+            
+            function animateRotation() {
+                if (!gameActive) return; // Stop animation when game is not active
+                
+                angle += 0.01;
+                const x = Math.sin(angle) * radius;
+                const y = Math.cos(angle) * radius;
+                
+                // Apply 3D rotation if not being dragged
+                if (!isMapDragging) {
+                    gameMap.style.transform = `perspective(1000px) rotateX(${y}deg) rotateY(${x}deg)`;
+                    
+                    // Apply dynamic lighting effect
+                    const lightX = centerX + Math.sin(angle) * centerX * 0.8;
+                    const lightY = centerY + Math.cos(angle) * centerY * 0.8;
+                    gameMap.style.backgroundImage = `radial-gradient(circle at ${lightX}px ${lightY}px, rgba(255,255,255,0.2) 0%, rgba(0,0,0,0.3) 70%)`;
+                }
+                
+                requestAnimationFrame(animateRotation);
+            }
+            
+            // Start auto-rotation
+            requestAnimationFrame(animateRotation);
+        };
         
         // Add 3D movement effect based on mouse position
         gameMap.addEventListener('mousemove', function(e) {
@@ -1144,21 +1869,82 @@ document.addEventListener('DOMContentLoaded', function() {
             const x = e.clientX - rect.left - rect.width / 2;
             const y = e.clientY - rect.top - rect.height / 2;
             
-            // Calculate tilt based on mouse position (limited range)
-            const tiltX = y / rect.height * 10;
-            const tiltY = -x / rect.width * 10;
+            // Calculate tilt based on mouse position (enhanced range)
+            const tiltX = (y / rect.height) * 15;
+            const tiltY = (-x / rect.width) * 15;
             
+            // Add smooth transition for mouse movement
+            gameMap.style.transition = 'transform 0.3s ease-out';
             gameMap.style.transform = `perspective(1000px) rotateX(${tiltX}deg) rotateY(${tiltY}deg)`;
             
-            // Also adjust the light effect
-            gameMap.style.backgroundImage = `radial-gradient(circle at ${e.clientX - rect.left}px ${e.clientY - rect.top}px, rgba(255,255,255,0.2) 0%, rgba(0,0,0,0.3) 70%)`;
+            // Dynamic lighting follows cursor position
+            gameMap.style.backgroundImage = `radial-gradient(circle at ${e.clientX - rect.left}px ${e.clientY - rect.top}px, rgba(255,255,255,0.3) 0%, rgba(0,0,0,0.4) 70%)`;
+        });
+        
+        // Add subtle bounce effect when cities are clicked
+        gameMap.addEventListener('click', function() {
+            if (typeof anime !== 'undefined') {
+                anime({
+                    targets: gameMap,
+                    scale: [1, 0.98, 1],
+                    duration: 300,
+                    easing: 'easeOutElastic(1, .5)'
+                });
+            }
         });
         
         // Reset transform when mouse leaves
         gameMap.addEventListener('mouseleave', function() {
+            gameMap.style.transition = 'transform 1s ease-out, background-image 1s ease-out';
             gameMap.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg)';
             gameMap.style.backgroundImage = 'radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(0,0,0,0.3) 100%)';
+            
+            // Restart auto-rotation when mouse leaves
+            rotateMap();
         });
+        
+        // Add 3D stars/atmosphere effect
+        addGlobeAtmosphere();
+        
+        // Start rotation
+        rotateMap();
+    }
+    
+    // Add atmosphere effect to the globe
+    function addGlobeAtmosphere() {
+        const atmosphere = document.querySelector('.globe-atmosphere');
+        if (!atmosphere) return;
+        
+        // Clear any existing stars
+        atmosphere.innerHTML = '';
+        
+        // Add stars
+        for (let i = 0; i < 100; i++) {
+            const star = document.createElement('div');
+            star.className = 'star';
+            star.style.left = `${Math.random() * 100}%`;
+            star.style.top = `${Math.random() * 100}%`;
+            star.style.animationDelay = `${Math.random() * 5}s`;
+            star.style.animationDuration = `${3 + Math.random() * 7}s`;
+            
+            // Vary star sizes
+            const size = 1 + Math.random() * 2;
+            star.style.width = `${size}px`;
+            star.style.height = `${size}px`;
+            
+            atmosphere.appendChild(star);
+        }
+        
+        // Add cloud layers if not in expert mode
+        if (currentGameMode !== 'expert') {
+            for (let i = 0; i < 3; i++) {
+                const cloud = document.createElement('div');
+                cloud.className = 'globe-cloud';
+                cloud.style.animationDelay = `${i * 2}s`;
+                cloud.style.opacity = 0.1 + (Math.random() * 0.1);
+                atmosphere.appendChild(cloud);
+            }
+        }
     }
     
     // Load region data with appropriate difficulty
@@ -1232,18 +2018,27 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Apply weather effects to the map
-    function applyWeatherEffects() {
+    // Apply enhanced weather effects to the map
+    function applyWeatherEffects(specifiedWeatherType = null) {
         if (!regionData[currentRegion]) return;
         
         const region = regionData[currentRegion];
-        const weatherType = weatherTypes[Math.floor(Math.random() * weatherTypes.length)];
+        
+        // Select a weather type randomly if not specified
+        let weatherType;
+        if (specifiedWeatherType) {
+            weatherType = weatherTypes.find(w => w.type === specifiedWeatherType) || weatherTypes[0];
+        } else {
+            weatherType = weatherTypes[Math.floor(Math.random() * weatherTypes.length)];
+        }
+        
         const weatherContainer = document.querySelector('.weather-effects');
         
         if (!weatherContainer) return;
         
         // Apply weather effect class
-        weatherContainer.classList.add(weatherType);
+        weatherContainer.className = 'weather-effects';
+        weatherContainer.classList.add(weatherType.type);
         
         // Mark weather-affected cities
         weatherAffectedCities = region.weatherProne ? region.weatherProne.slice() : [];
@@ -1264,957 +2059,58 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
         
+        // Play weather sound effect
+        playSound(weatherType.sound || soundEffects.weatherAlert);
+        
         // Show weather notification
-        showTooltip({
-            pageX: window.innerWidth / 2,
-            pageY: window.innerHeight / 2
-        }, `Weather Alert: ${weatherType.charAt(0).toUpperCase() + weatherType.slice(1)} affecting some cities!`);
-        setTimeout(hideTooltip, 3000);
-    }
-    
-    // Create a city on the map
-    function createCity(cityData) {
-        if (!gameMap) return;
+        showNotification(`${weatherType.icon} Weather Alert: ${weatherType.name} is affecting some cities!`, 5000);
         
-        const city = document.createElement('div');
-        city.className = 'city';
-        city.id = cityData.id;
-        city.style.left = cityData.x + 'px';
-        city.style.top = cityData.y + 'px';
-        city.dataset.name = cityData.name;
+        // Update weather info panel
+        updateWeatherInfoPanel(weatherType);
         
-        // Add transport icon
-        const transport = transportData[currentTransport];
-        if (transport) {
-            city.dataset.transport = transport.icon;
-        }
-        
-        // Add click event
-        city.addEventListener('click', (e) => {
-            if (e.ctrlKey || e.metaKey) {
-                // Show city info on Ctrl/Cmd + click
-                showCityInfo(cityData);
-            } else {
-                // Normal city selection
-                handleCityClick(cityData);
+        // Show the weather info panel
+        setTimeout(() => {
+            const weatherInfoPanel = document.querySelector('.weather-info-panel');
+            if (weatherInfoPanel) {
+                weatherInfoPanel.classList.remove('hidden');
             }
-        });
-        
-        // Add right-click event for city info
-        city.addEventListener('contextmenu', (e) => {
-            e.preventDefault();
-            showCityInfo(cityData);
-        });
-        
-        // Add hover events for tooltip
-        city.addEventListener('mouseenter', (e) => {
-            const transport = transportData[currentTransport];
-            showTooltip(e, `${cityData.name} ${transport ? transport.icon : ''}`);
-        });
-        
-        city.addEventListener('mousemove', (e) => {
-            moveTooltip(e);
-        });
-        
-        city.addEventListener('mouseleave', () => {
-            hideTooltip();
-        });
-        
-       // Create city label
-        const label = document.createElement('div');
-        label.className = 'city-label';
-        label.textContent = cityData.name;
-        label.style.left = cityData.x + 'px';
-        label.style.top = cityData.y + 'px';
-        
-        gameMap.appendChild(city);
-        gameMap.appendChild(label);
-        cities.push(cityData);
+        }, 1000);
     }
     
-    // Create a path between cities
-    function createPath(pathData) {
-        if (!gameMap) return;
+    // Update weather info panel with details
+    function updateWeatherInfoPanel(weatherType) {
+        const weatherInfoPanel = document.querySelector('.weather-info-panel');
+        if (!weatherInfoPanel) return;
         
-        const fromCity = cities.find(city => city.id === pathData.from);
-        const toCity = cities.find(city => city.id === pathData.to);
+        const weatherTitle = document.getElementById('weatherTitle');
+        const weatherIcon = document.getElementById('weatherIcon');
+        const weatherName = document.getElementById('weatherName');
+        const weatherDescription = document.getElementById('weatherDescription');
+        const weatherEffectsList = document.getElementById('weatherEffectsList');
         
-        if (!fromCity || !toCity) return;
+        if (weatherTitle) weatherTitle.textContent = `Weather Alert: ${weatherType.name}`;
+        if (weatherIcon) weatherIcon.textContent = weatherType.icon;
+        if (weatherName) weatherName.textContent = weatherType.name;
+        if (weatherDescription) weatherDescription.textContent = weatherType.description;
         
-        // Calculate path properties
-        const dx = toCity.x - fromCity.x;
-        const dy = toCity.y - fromCity.y;
-        const distance = Math.sqrt(dx * dx + dy * dy);
-        const angle = Math.atan2(dy, dx) * 180 / Math.PI;
-        
-        // Create path element
-        const path = document.createElement('div');
-        path.className = 'path';
-        path.style.width = distance + 'px';
-        path.style.left = fromCity.x + 'px';
-        path.style.top = fromCity.y + 'px';
-        path.style.transform = `rotate(${angle}deg)`;
-        
-        // Apply transport-specific styling
-        const transport = transportData[currentTransport];
-        
-        // Add hover events for tooltip
-        path.addEventListener('mouseenter', (e) => {
-            if (!transport) return;
+        // Clear existing effects
+        if (weatherEffectsList) {
+            weatherEffectsList.innerHTML = '';
             
-            const costFactor = transport.costFactor;
-            const timeFactor = 1 / transport.speedFactor;
-            
-            let costDisplay = Math.round(pathData.cost * costFactor);
-            let timeDisplay = Math.round(pathData.time * timeFactor * 10) / 10;
-            let distanceDisplay = pathData.distance;
-            
-            // Check if weather affects this path
-            if (weatherEffects && (weatherAffectedCities.includes(fromCity.id) || weatherAffectedCities.includes(toCity.id))) {
-                costDisplay = Math.round(costDisplay * transport.weatherImpact);
-                timeDisplay = Math.round(timeDisplay * transport.weatherImpact * 10) / 10;
-            }
-            
-            showTooltip(e, `${fromCity.name} to ${toCity.name}:
-                ${transport.icon} $${costDisplay} | ${distanceDisplay} km | ${timeDisplay} hrs`);
-        });
-        
-        path.addEventListener('mousemove', (e) => {
-            moveTooltip(e);
-        });
-        
-        path.addEventListener('mouseleave', () => {
-            hideTooltip();
-        });
-        
-        gameMap.appendChild(path);
-        paths.push({
-            ...pathData, 
-            element: path, 
-            from: fromCity, 
-            to: toCity,
-            weatherAffected: false
-        });
-    }
-    
-    // Create a route path between cities
-    function createRoutePath(fromCity, toCity, index) {
-        if (!gameMap) return;
-        
-        const dx = toCity.x - fromCity.x;
-        const dy = toCity.y - fromCity.y;
-        const distance = Math.sqrt(dx * dx + dy * dy);
-        const angle = Math.atan2(dy, dx) * 180 / Math.PI;
-        
-        // Create route path element
-        const routePath = document.createElement('div');
-        routePath.className = 'route-path';
-        routePath.style.width = distance + 'px';
-        routePath.style.left = fromCity.x + 'px';
-        routePath.style.top = fromCity.y + 'px';
-        routePath.style.transform = `rotate(${angle}deg)`;
-        routePath.dataset.index = index;
-        
-        gameMap.appendChild(routePath);
-        routePaths.push(routePath);
-        
-        // Animate the route path with 3D effect
-        if (typeof anime !== 'undefined') {
-            anime({
-                targets: routePath,
-                opacity: [0, 1],
-                translateZ: [0, 20, 0],
-                duration: 800,
-                easing: 'easeOutCubic'
-            });
-        } else {
-            // Simple fallback animation if anime.js is not available
-            routePath.style.opacity = 1;
-        }
-        
-        // Add particle animation along path
-        createPathAnimation(fromCity, toCity);
-    }
-    
-    // Create particle animation along a path
-    function createPathAnimation(fromCity, toCity) {
-        if (!gameMap || typeof anime === 'undefined') return;
-        
-        const particle = document.createElement('div');
-        particle.className = 'path-animation';
-        gameMap.appendChild(particle);
-        
-        anime({
-            targets: particle,
-            left: [fromCity.x, toCity.x],
-            top: [fromCity.y, toCity.y],
-            opacity: [1, 0],
-            easing: 'easeOutQuad',
-            duration: 1000,
-            complete: function() {
-                particle.remove();
-            }
-        });
-    }
-    
-    // Handle city click
-    function handleCityClick(cityData) {
-        if (!gameActive || !gameMap) return;
-        
-        const cityElement = document.getElementById(cityData.id);
-        if (!cityElement) return;
-        
-        // If this is the first city, set it as the start
-        if (selectedRoute.length === 0) {
-            startCity = cityData;
-            cityElement.classList.add('start');
-            cityElement.classList.add('visited');
-            selectedRoute.push(cityData);
-            
-            // Animate the start city with 3D effect
-            if (typeof anime !== 'undefined') {
-                anime({
-                    targets: cityElement,
-                    scale: [1, 1.2, 1],
-                    translateZ: [0, 30, 0],
-                    boxShadow: [
-                        '0 0 0 4px rgba(46, 204, 113, 0.3)',
-                        '0 0 0 8px rgba(46, 204, 113, 0.6)',
-                        '0 0 0 4px rgba(46, 204, 113, 0.3)'
-                    ],
-                    duration: 800,
-                    easing: 'easeOutElastic(1, .5)'
-                });
-            }
-        } 
-        // Check if the city is already in the route
-        else if (selectedRoute.some(city => city.id === cityData.id)) {
-            // If clicking on start city and all other cities are visited, complete the route
-            if (cityData.id === startCity.id && selectedRoute.length === cities.length) {
-                // Add the start city to complete the route
-                selectedRoute.push(startCity);
+            // Add transport-specific effects
+            Object.entries(weatherType.transportEffect).forEach(([transport, factor]) => {
+                const transportData = this.transportData[transport];
+                if (!transportData) return;
                 
-                // Create the final route path
-                const lastCity = selectedRoute[selectedRoute.length - 2];
-                createRoutePath(lastCity, startCity, selectedRoute.length - 1);
+                const li = document.createElement('li');
+                li.innerHTML = `${transportData.icon} ${transportData.name}: ${Math.round((factor - 1) * 100)}% slower & more expensive`;
                 
-                // Enable validate button
-                validateBtn.disabled = false;
-                
-                // Update the route display
-                updateRouteDisplay();
-                
-                // Animate the completion with 3D effect
-                if (typeof anime !== 'undefined') {
-                    anime({
-                        targets: cityElement,
-                        scale: [1, 1.3, 1],
-                        translateZ: [0, 50, 0],
-                        boxShadow: [
-                            '0 0 0 4px rgba(46, 204, 113, 0.3)',
-                            '0 0 0 12px rgba(46, 204, 113, 0.6)',
-                            '0 0 0 4px rgba(46, 204, 113, 0.3)'
-                        ],
-                        duration: 1000,
-                        easing: 'easeOutElastic(1, .5)'
-                    });
+                // Highlight current transport
+                if (transport === currentTransport) {
+                    li.classList.add('current-transport');
                 }
-            }
-            // Otherwise, do nothing if already visited
-            return;
-        }
-        // If there is a direct path to the city
-        else if (hasDirectPath(selectedRoute[selectedRoute.length - 1], cityData)) {
-            cityElement.classList.add('visited');
-            
-            // Animate the city selection with 3D effect
-            if (typeof anime !== 'undefined') {
-                anime({
-                    targets: cityElement,
-                    scale: [1, 1.2, 1],
-                    translateZ: [0, 30, 0],
-                    boxShadow: [
-                        '0 0 0 4px rgba(52, 152, 219, 0.3)',
-                        '0 0 0 8px rgba(52, 152, 219, 0.6)',
-                        '0 0 0 4px rgba(52, 152, 219, 0.3)'
-                    ],
-                    duration: 600,
-                    easing: 'easeOutElastic(1, .5)'
-                });
-            }
-            
-            // Create a path from the previous city
-            const prevCity = selectedRoute[selectedRoute.length - 1];
-            createRoutePath(prevCity, cityData, selectedRoute.length);
-            
-            // Add to route
-            selectedRoute.push(cityData);
-        }
-        else {
-            // No direct path, provide feedback
-            if (typeof anime !== 'undefined') {
-                anime({
-                    targets: cityElement,
-                    translateX: [0, -5, 5, -5, 5, 0],
-                    duration: 500,
-                    easing: 'easeInOutSine'
-                });
-            }
-            
-            showTooltip({
-                pageX: cityElement.getBoundingClientRect().left,
-                pageY: cityElement.getBoundingClientRect().top
-            }, "No direct path available!");
-            setTimeout(hideTooltip, 1500);
-            return;
-        }
-        
-        // Update route display
-        updateRouteDisplay();
-    }
-    
-    // Show city information panel
-    function showCityInfo(cityData) {
-        if (!cityInfoPanel || !cityData) return;
-        
-        // Update city info
-        if (cityInfoName) cityInfoName.textContent = cityData.name;
-        if (cityImage) cityImage.src = cityData.image;
-        if (cityPopulation) cityPopulation.textContent = cityData.population;
-        if (cityArea) cityArea.textContent = cityData.area;
-        if (cityTimeZone) cityTimeZone.textContent = cityData.timeZone;
-        if (cityDescription) cityDescription.textContent = cityData.description;
-        
-        // Show the panel
-        cityInfoPanel.classList.remove('hidden');
-        
-        // Mark city as visited for achievement tracking
-        try {
-            localStorage.setItem(`visited_${cityData.id}`, 'true');
-        } catch (e) {
-            console.error("Error saving city visit:", e);
-        }
-        
-        // Check for explorer achievement
-        checkAchievement('explorer');
-    }
-    
-    // Hide city information panel
-    function hideCityInfo() {
-        if (cityInfoPanel) {
-            cityInfoPanel.classList.add('hidden');
-        }
-    }
-    
-    // Check if there is a direct path between two cities
-    function hasDirectPath(fromCity, toCity) {
-        if (!fromCity || !toCity) return false;
-        
-        return paths.some(path => 
-            (path.from.id === fromCity.id && path.to.id === toCity.id) || 
-            (path.from.id === toCity.id && path.to.id === fromCity.id)
-        );
-    }
-    
-    // Get path data between two cities
-    function getPathData(fromCity, toCity) {
-        if (!fromCity || !toCity) return null;
-        
-        const path = paths.find(path => 
-            (path.from.id === fromCity.id && path.to.id === toCity.id) || 
-            (path.from.id === toCity.id && path.to.id === fromCity.id)
-        );
-        
-        if (!path) return null;
-        
-        const transport = transportData[currentTransport];
-        if (!transport) return { cost: path.cost, time: path.time, distance: path.distance };
-        
-        let cost = path.cost * transport.costFactor;
-        let time = path.time / transport.speedFactor;
-        let distance = path.distance;
-        
-        // Apply weather effects if needed
-        if (weatherEffects && path.weatherAffected) {
-            cost *= transport.weatherImpact;
-            time *= transport.weatherImpact;
-        }
-        
-        return {
-            cost: Math.round(cost),
-            time: Math.round(time * 10) / 10,
-            distance: distance
-        };
-    }
-    
-    // Calculate total route metrics
-    function calculateRouteMetrics() {
-        let totalCost = 0;
-        let totalDistance = 0;
-        let totalTime = 0;
-        
-        for (let i = 0; i < selectedRoute.length - 1; i++) {
-            const pathData = getPathData(selectedRoute[i], selectedRoute[i + 1]);
-            if (pathData) {
-                totalCost += pathData.cost;
-                totalDistance += pathData.distance;
-                totalTime += pathData.time;
-            }
-        }
-        
-        return {
-            cost: totalCost,
-            distance: totalDistance,
-            time: Math.round(totalTime * 10) / 10
-        };
-    }
-    
-    // Update the route display
-    function updateRouteDisplay() {
-        if (!routeList) return;
-        
-        routeList.innerHTML = '';
-        
-        const metrics = calculateRouteMetrics();
-        
-        selectedRoute.forEach((city, index) => {
-            if (index > 0) {
-                const prevCity = selectedRoute[index - 1];
-                const pathData = getPathData(prevCity, city);
                 
-                if (pathData) {
-                    const transport = transportData[currentTransport];
-                    const transportIcon = transport ? transport.icon : '';
-                    
-                    const li = document.createElement('li');
-                    li.innerHTML = `
-                        <span>${prevCity.name} → ${city.name}</span> 
-                        <span class="route-cost">${transportIcon} $${pathData.cost} | ${pathData.distance} km</span>
-                    `;
-                    routeList.appendChild(li);
-                }
-            }
-        });
-        
-        // Update counters
-        if (visitedCountDisplay) {
-            visitedCountDisplay.textContent = selectedRoute.length === cities.length + 1 ? 
-                cities.length : selectedRoute.length;
-        }
-        
-        if (currentCostDisplay) currentCostDisplay.textContent = metrics.cost;
-        if (currentDistanceDisplay) currentDistanceDisplay.textContent = metrics.distance;
-        if (travelTimeDisplay) travelTimeDisplay.textContent = metrics.time;
-    }
-    
-    // Update timer display
-    function updateTimer() {
-        if (!timeDisplay) return;
-        
-        elapsedTime = Math.floor((Date.now() - startTime) / 1000);
-        const minutes = Math.floor(elapsedTime / 60);
-        const seconds = elapsedTime % 60;
-        
-        // Format time as MM:SS
-        timeDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-        
-        // If in timed mode, check for time limit
-        if (currentGameMode === 'timed' && elapsedTime >= 180) { // 3 minute limit
-            validateRoute();
-        }
-    }
-    
-    // Validate the route
-    function validateRoute() {
-        if (!gameActive) return;
-        
-        // Stop the timer
-        clearInterval(timer);
-        
-        // Check if all cities are visited exactly once and route returns to start
-        const isValid = selectedRoute.length === cities.length + 1 && 
-                        selectedRoute[0].id === selectedRoute[selectedRoute.length - 1].id;
-        
-        // Get route metrics
-        const metrics = calculateRouteMetrics();
-        
-        // Get optimal route data for comparison
-        const region = regionData[currentRegion];
-        if (!region) return;
-        
-        const optimalDistance = region.optimalDistance || 0;
-        
-        // Calculate efficiency percentage
-        const efficiency = isValid ? Math.min(100, Math.round((optimalDistance / metrics.distance) * 100)) : 0;
-        
-        // Calculate final score
-        let finalScore = 0;
-        if (isValid) {
-            const difficultyBonus = {
-                'easy': 1.0,
-                'medium': 1.2,
-                'hard': 1.5
-            }[currentDifficulty] || 1.0;
-            
-            const timeBonus = Math.max(0, 600 - elapsedTime) * 0.5; // 0.5 points per second under 10 minutes
-            const efficiencyPoints = efficiency * 5;
-            
-            finalScore = Math.round((1000 - (metrics.cost / 2) + timeBonus + efficiencyPoints) * difficultyBonus);
-            finalScore = Math.max(finalScore, 100); // Minimum score of 100 if valid
-            
-            // In timed mode, apply time penalty
-            if (currentGameMode === 'timed') {
-                const timeRatio = Math.min(1, 180 / Math.max(1, elapsedTime));
-                finalScore = Math.round(finalScore * timeRatio);
-            }
-        }
-        
-        // Set result display
-        if (finalTimeDisplay) finalTimeDisplay.textContent = timeDisplay ? timeDisplay.textContent : '00:00';
-        if (finalCitiesDisplay) finalCitiesDisplay.textContent = cities.length;
-        if (finalCostDisplay) finalCostDisplay.textContent = metrics.cost;
-        if (finalDistanceDisplay) finalDistanceDisplay.textContent = metrics.distance;
-        if (finalScoreDisplay) finalScoreDisplay.textContent = finalScore;
-        if (yourDistanceDisplay) yourDistanceDisplay.textContent = `${metrics.distance} km`;
-        if (optimalDistanceDisplay) optimalDistanceDisplay.textContent = `${optimalDistance} km`;
-        if (efficiencyRatingDisplay) efficiencyRatingDisplay.textContent = `${efficiency}%`;
-        
-        // Generate feedback message
-        let feedback = "";
-        
-        if (!isValid) {
-            feedback = "Invalid route! Make sure to visit all cities exactly once and return to the start.";
-        } else if (finalScore > 900) {
-            feedback = "Outstanding! You found an incredibly efficient route!";
-        } else if (finalScore > 700) {
-            feedback = "Great job! Your route planning skills are impressive!";
-        } else if (finalScore > 500) {
-            feedback = "Good work! There's still room for optimization.";
-        } else {
-            feedback = "Not bad for a start. Try to find more efficient connections!";
-        }
-        
-        if (routeFeedbackDisplay) routeFeedbackDisplay.textContent = feedback;
-        
-        // Mark this region as completed
-        if (isValid) {
-            try {
-                localStorage.setItem(`completed_${currentRegion}`, 'true');
-            } catch (e) {
-                console.error("Error saving region completion:", e);
-            }
-        }
-        
-        // Check for achievements
-        if (isValid) {
-            checkAchievement('speed_demon');
-            checkAchievement('perfectionist', finalScore, selectedRoute, currentDifficulty);
-            checkAchievement('globetrotter');
-            checkAchievement('weatherproof');
-            checkAchievement('speed_run', finalScore, selectedRoute, currentDifficulty, currentGameMode);
-        }
-        
-        // Create mini-map visualization
-        createMiniMap();
-        
-        // Show result panel
-        showResultPanel();
-        
-        // End the game
-        endGame();
-    }
-    
-    // Show the result panel
-    function showResultPanel() {
-        if (overlay) overlay.classList.add('show');
-        if (resultPanel) resultPanel.classList.add('show');
-    }
-    
-    // Hide the result panel
-    function hideResultPanel() {
-        if (overlay) overlay.classList.remove('show');
-        if (resultPanel) resultPanel.classList.remove('show');
-        if (newAchievementPanel) newAchievementPanel.classList.remove('show');
-    }
-    
-    // Create mini-map for result visualization
-    function createMiniMap() {
-        if (!miniMap) return;
-        
-        miniMap.innerHTML = '';
-        
-        // Set mini-map theme
-        miniMap.className = `mini-map map-${currentTheme}`;
-        
-        // Scale factor for mini-map
-        const scaleFactor = 0.4;
-        
-        // Create cities
-        cities.forEach(city => {
-            const miniCity = document.createElement('div');
-            miniCity.className = 'city mini';
-            miniCity.style.left = (city.x * scaleFactor) + 'px';
-            miniCity.style.top = (city.y * scaleFactor) + 'px';
-            
-            if (selectedRoute.some(routeCity => routeCity.id === city.id)) {
-                miniCity.classList.add('visited');
-            }
-            
-            if (startCity && city.id === startCity.id) {
-                miniCity.classList.add('start');
-            }
-            
-            miniMap.appendChild(miniCity);
-        });
-        
-        // Create route paths
-        for (let i = 0; i < selectedRoute.length - 1; i++) {
-            const fromCity = selectedRoute[i];
-            const toCity = selectedRoute[i + 1];
-            
-            const dx = toCity.x - fromCity.x;
-            const dy = toCity.y - fromCity.y;
-            const distance = Math.sqrt(dx * dx + dy * dy);
-            const angle = Math.atan2(dy, dx) * 180 / Math.PI;
-            
-            const routePath = document.createElement('div');
-            routePath.className = 'route-path visible';
-            routePath.style.width = (distance * scaleFactor) + 'px';
-            routePath.style.left = (fromCity.x * scaleFactor) + 'px';
-            routePath.style.top = (fromCity.y * scaleFactor) + 'px';
-            routePath.style.transform = `rotate(${angle}deg)`;
-            
-            miniMap.appendChild(routePath);
-        }
-    }
-    
-    // Reset the current route
-    function resetRoute() {
-        // Clear selected route
-        selectedRoute = [];
-        
-        // Remove all route paths
-        routePaths.forEach(path => {
-            if (path && path.parentNode) {
-                path.remove();
-            }
-        });
-        routePaths = [];
-        
-        // Reset city styles
-        document.querySelectorAll('.city').forEach(city => {
-            city.classList.remove('visited', 'start');
-        });
-        
-        // Reset UI
-        if (routeList) routeList.innerHTML = '';
-        if (visitedCountDisplay) visitedCountDisplay.textContent = '0';
-        if (currentCostDisplay) currentCostDisplay.textContent = '0';
-        if (currentDistanceDisplay) currentDistanceDisplay.textContent = '0';
-        if (travelTimeDisplay) travelTimeDisplay.textContent = '0';
-        if (validateBtn) validateBtn.disabled = true;
-        
-        // Reset start city
-        startCity = null;
-        
-        // Animate reset
-        if (typeof anime !== 'undefined') {
-            anime({
-                targets: '.city',
-                scale: [0.8, 1],
-                opacity: [0.5, 1],
-                duration: 500,
-                easing: 'easeOutElastic(1, .5)'
+                weatherEffectsList.appendChild(li);
             });
         }
     }
-    
-    // Show a hint
-    function showHint() {
-        if (!hintPanel || !hintText) return;
-        
-        const region = regionData[currentRegion];
-        if (!region) return;
-        
-        // General hints first
-        const generalHints = [
-            "Try to create a loop that minimizes crossing paths.",
-            "Cities with more connections often make better starting points.",
-            "Weather conditions can significantly affect travel time and cost.",
-            "Consider starting from cities at the edge of the map."
-        ];
-        
-        // More specific hints later
-        const specificHints = [
-            `The optimal route has a total distance of approximately ${region.optimalDistance} km.`,
-            "Try to visit clusters of nearby cities one after another.",
-            `Consider ${region.cities[0].name} or ${region.cities[1].name} as a starting point.`,
-            "The optimal route tends to follow the perimeter of the region."
-        ];
-        
-        // Solution hint last
-        const solutionHint = `The optimal route begins with: ${region.optimalRoute[0]} → ${region.optimalRoute[1]} → ${region.optimalRoute[2]}...`;
-        
-        // Determine which hint to show
-        let hint;
-        if (hintCount < generalHints.length) {
-            hint = generalHints[hintCount];
-        } else if (hintCount < generalHints.length + specificHints.length) {
-            hint = specificHints[hintCount - generalHints.length];
-        } else {
-            hint = solutionHint;
-        }
-        
-        // Update hint text
-        hintText.textContent = hint;
-        
-        // Show hint panel
-        hintPanel.classList.add('show');
-        
-        // Increment hint count
-        hintCount++;
-    }
-    
-    // Show next hint
-    function showNextHint() {
-        hintCount++;
-        showHint();
-    }
-    
-    // Show the optimal solution
-    function showSolution() {
-        // First reset the current route
-        resetRoute();
-        
-        // Get optimal route for the region
-        const region = regionData[currentRegion];
-        if (!region || !region.optimalRoute) return;
-        
-        const optimalRoute = region.optimalRoute;
-        
-        // Find the corresponding city objects
-        const routeCities = optimalRoute.map(cityId => 
-            cities.find(city => city.id === cityId)
-        ).filter(city => city); // Filter out any undefined cities
-        
-        // Show a message
-        showTooltip({
-            pageX: window.innerWidth / 2,
-            pageY: window.innerHeight / 2
-        }, "Showing optimal route solution...");
-        setTimeout(hideTooltip, 3000);
-        
-        // Animate the solution path building
-        let index = 0;
-        
-        function buildNextSegment() {
-            if (index >= routeCities.length) {
-                // Add the starting city again to complete the loop
-                handleCityClick(routeCities[0]);
-                
-                // Hide hint panel
-                hideHintPanel();
-                return;
-            }
-            
-            handleCityClick(routeCities[index]);
-            index++;
-            setTimeout(buildNextSegment, 800);
-        }
-        
-        // Start building
-        buildNextSegment();
-    }
-    
-    // Hide hint panel
-    function hideHintPanel() {
-        if (hintPanel) {
-            hintPanel.classList.remove('show');
-        }
-    }
-    
-    // Show tooltip
-    function showTooltip(event, text) {
-        if (!tooltip) return;
-        
-        tooltip.textContent = text;
-        tooltip.style.left = (event.pageX + 10) + 'px';
-        tooltip.style.top = (event.pageY + 10) + 'px';
-        tooltip.style.opacity = '1';
-    }
-    
-    // Move tooltip
-    function moveTooltip(event) {
-        if (!tooltip) return;
-        
-        tooltip.style.left = (event.pageX + 10) + 'px';
-        tooltip.style.top = (event.pageY + 10) + 'px';
-    }
-    
-    // Hide tooltip
-    function hideTooltip() {
-        if (tooltip) {
-            tooltip.style.opacity = '0';
-        }
-    }
-    
-    // Change map theme
-    function changeMapTheme(theme) {
-        if (!gameMap) return;
-        
-        gameMap.className = `map map-${theme}`;
-        currentTheme = theme;
-        
-        // Update theme selector
-        themeOptions.forEach(option => {
-            if (option.dataset.theme === theme) {
-                option.classList.add('active');
-            } else {
-                option.classList.remove('active');
-            }
-        });
-    }
-    
-    // Map zoom and pan functions
-    function zoomIn() {
-        if (zoomLevel < 2) {
-            zoomLevel += 0.2;
-            updateMapTransform();
-        }
-    }
-    
-    function zoomOut() {
-        if (zoomLevel > 0.6) {
-            zoomLevel -= 0.2;
-            updateMapTransform();
-        }
-    }
-    
-    function resetView() {
-        zoomLevel = 1;
-        mapPan = { x: 0, y: 0 };
-        updateMapTransform();
-    }
-    
-    function updateMapTransform() {
-        const cities = document.querySelectorAll('.city, .city-label');
-        const paths = document.querySelectorAll('.path, .route-path');
-        
-        cities.forEach(city => {
-            city.style.transform = `translate(-50%, -50%) scale(${zoomLevel}) translate(${mapPan.x}px, ${mapPan.y}px)`;
-        });
-        
-        paths.forEach(path => {
-            const currentTransform = path.style.transform;
-            const rotateValue = currentTransform.match(/rotate\(([^)]+)\)/);
-            const rotate = rotateValue ? rotateValue[0] : 'rotate(0deg)';
-            
-            path.style.transform = `${rotate} scale(${zoomLevel}) translate(${mapPan.x}px, ${mapPan.y}px)`;
-        });
-    }
-    
-    // Share result function
-    function shareResult() {
-        const metrics = calculateRouteMetrics();
-        const score = finalScoreDisplay ? finalScoreDisplay.textContent : '0';
-        
-        const shareText = `I completed The Route Challenge in ${currentRegion} with a score of ${score}! Distance: ${metrics.distance}km, Cost: $${metrics.cost}`;
-        
-        // Copy to clipboard
-        try {
-            navigator.clipboard.writeText(shareText).then(() => {
-                showTooltip({
-                    pageX: window.innerWidth / 2,
-                    pageY: window.innerHeight / 2
-                }, "Result copied to clipboard! Share with your friends.");
-                setTimeout(hideTooltip, 3000);
-            });
-        } catch (e) {
-            console.error("Error copying to clipboard:", e);
-            alert("Result: " + shareText);
-        }
-    }
-    
-    // Show optimal route
-    function showOptimalRoute() {
-        hideResultPanel();
-        showSolution();
-    }
-    
-    // Check for achievements
-    function checkAchievement(achievementId, ...args) {
-        // Skip if already earned
-        if (achievementsEarned[achievementId]) return;
-        
-        const achievement = achievements[achievementId];
-        if (achievement && achievement.check(...args)) {
-            // Mark as earned
-            achievementsEarned[achievementId] = true;
-            
-            // Update UI
-            const achievementElement = document.querySelector(`.achievement[data-id="${achievementId}"]`);
-            if (achievementElement) {
-                const statusElement = achievementElement.querySelector('.achievement-status');
-                if (statusElement) {
-                    statusElement.textContent = '✅';
-                    statusElement.classList.remove('locked');
-                    statusElement.classList.add('unlocked');
-                }
-                
-                // Animate
-                if (typeof anime !== 'undefined') {
-                    anime({
-                        targets: achievementElement,
-                        scale: [1, 1.05, 1],
-                        backgroundColor: ['#f5f5f5', '#e3f2fd', '#f5f5f5'],
-                        duration: 1000,
-                        easing: 'easeOutElastic(1, .5)'
-                    });
-                }
-            }
-            
-            // Show achievement notification
-            showAchievementNotification(achievement);
-            
-            // Save state
-            saveGameState();
-            
-            return true;
-        }
-        
-        return false;
-    }
-    
-    // Show achievement notification
-    function showAchievementNotification(achievement) {
-        if (!newAchievementPanel || !achievement) return;
-        
-        if (achievementName) achievementName.textContent = achievement.name;
-        if (achievementDescription) achievementDescription.textContent = achievement.description;
-        
-        const iconElement = document.querySelector('#newAchievement .achievement-icon');
-        if (iconElement) iconElement.textContent = achievement.icon;
-        
-        newAchievementPanel.classList.add('show');
-    }
-    
-    // Update achievement display
-    function updateAchievementDisplay() {
-        for (const [id, earned] of Object.entries(achievementsEarned)) {
-            if (earned) {
-                const achievementElement = document.querySelector(`.achievement[data-id="${id}"]`);
-                if (achievementElement) {
-                    const statusElement = achievementElement.querySelector('.achievement-status');
-                    if (statusElement) {
-                        statusElement.textContent = '✅';
-                        statusElement.classList.remove('locked');
-                        statusElement.classList.add('unlocked');
-                    }
-                }
-            }
-        }
-    }
-    
-    // Initialize the game
-    init();
-});
